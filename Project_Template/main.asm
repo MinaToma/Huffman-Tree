@@ -1,6 +1,6 @@
-
 INCLUDE Irvine32.inc
 .DATA
+
 
 ;--------------------------------------------------------------------------
 ;	This is the main container that simulates the original prioiry queue
@@ -25,10 +25,12 @@ priorityQueueSize dword 0
 ;--------------------------------------------------------------------------
 huffmanTree dword 2048 dup(-1)
 
+
 ;--------------------------------------------------------------------------
 ;	The size of huffmanTree
 ;--------------------------------------------------------------------------
 huffmanTreeSize dword 0
+
 
 ;--------------------------------------------------------------------------
 ; string for testing
@@ -36,19 +38,40 @@ huffmanTreeSize dword 0
 inputString byte "howaree";
 
 
+;--------------------------------------------------------------------------
+; shift to get next Node
+;--------------------------------------------------------------------------
+shiftOffset dword 12
+
+
+;--------------------------------------------------------------------------
+; Max Value
+;--------------------------------------------------------------------------
+maxValue dword 1000000000
+
+;==========================================================================
+;==========================================================================
+;==========================================================================
+
+
 .code
 main PROC
 	
-	CALL constructOccurArray
+	CALL constructOccurPQ
+	CALL constructTree
 
 	exit
 main ENDP
 
+
 ;--------------------------------------------------------------------------
 ; Given a string it creates an occurrences array --> priorityQueue
 ; Fills Leaves nodes in huffmanTree
+; at last:
+;	----> huffmanTreeSize = equal to number of leaves
+;	----> prioirtyQueueSize = number of unique chars 
 ;--------------------------------------------------------------------------
-constructOccurArray PROC
+constructOccurPQ PROC
 	
 	mov ecx, lengthof inputString
 	mov esi, offset inputString
@@ -71,9 +94,7 @@ constructOccurArray PROC
 			jmp foundOccurrence
 
 			noEqualChars:
-			add esi, type priorityQueue
-			add esi, type priorityQueue
-			add esi, type priorityQueue
+			add esi, shiftOffset 
 		loop loopOverOccerrenceArray
 
 		emptyPriorityQueue:
@@ -98,26 +119,127 @@ constructOccurArray PROC
 		mov [edi], eax
 
 		mov eax, huffmanTreeSize
-		mov dword ptr [esi + type priorityQueue + type priorityQueue], eax
+		mov dword ptr [esi + type priorityQueue * 2], eax
 
-		add esi, type priorityQueue
-		add esi, type priorityQueue
-		add esi, type priorityQueue
-
-		add edi, type huffmanTree
-		add edi, type huffmanTree
-		add edi, type huffmanTree
-
+		add esi, shiftOffset
+		add edi, shiftOffset
 		inc huffmanTreeSize
 	Loop fillHuffmanTreeLeaves
 
-	mov esi, offset huffmanTree
-	mov edi, offset priorityQueue
+	RET
+constructOccurPQ ENDP
+
+
+;--------------------------------------------------------------------------
+; Constructs Huffman tree
+;--------------------------------------------------------------------------
+constructTree PROC
+	
+	CALL sortPQ
+	
+	pqSizeNotOne:
+		
+		;-----------------
+		; First Node
+		;-----------------
+		mov esi, offset priorityQueue
+		mov ebx, [esi]
+
+		mov eax, [esi + type priorityQueue * 2]
+		mov [edi + type huffmanTree], eax
+
+		add esi, shiftOffset
+		
+		;-----------------
+		; Second Node
+		;-----------------
+		add ebx, [esi]
+		mov eax, [esi + type priorityQueue * 2]
+		mov [edi + type huffmanTree * 2], eax
+
+		mov [edi], ebx
+
+		add edi, shiftOffset
+
+		CALL reSortPQ
+		cmp priorityQueueSize, 1
+		jnz pqSizeNotOne
+
+		RET
+constructTree ENDP
+
+
+;--------------------------------------------------------------------------
+; sorts prioirityQueue Array
+; uses priorityQueueSize
+;--------------------------------------------------------------------------
+sortPQ PROC
+	
+	mov esi, offset priorityQueue
+	mov ecx, priorityQueueSize
+	
+	oLoop:
+
+		push ecx 
+
+		mov ecx, priorityQueueSize
+		dec ecx
+
+		iLoop:
+
+			mov eax, [esi]
+			cmp eax, [esi + type priorityQueue * 3]
+			jbe _continue
+
+			xchg eax, [esi + type priorityQueue * 3]
+			mov [esi], eax
+
+			mov eax , [esi + type priorityQueue]
+			xchg eax, [esi + type priorityQueue * 4]
+			mov[esi + type priorityQueue], eax
+
+			mov eax , [esi + type priorityQueue  * 2]
+			xchg eax, [esi + type priorityQueue * 5]
+			mov[esi + type priorityQueue * 2], eax
+
+			_continue:
+
+			add esi, shiftOffset
+		loop iLoop
+
+		mov esi, offset priorityQueue
+		pop ecx
+	loop oLoop
 
 	RET
-constructOccurArray ENDP
+sortPQ ENDP
+
+
+;--------------------------------------------------------------------------
+; removes first two elements and inserts new value (their sum)
+; decreases prioirityQueueSize
+;--------------------------------------------------------------------------
+reSortPQ PROC
+
+	mov esi, offset priorityQueue
+
+	mov ebx, [esi]
+	add ebx, [esi + type priorityQueue * 3]
+	
+	mov [esi], ebx
+	mov [esi + type priorityQueue] , ebx
+	mov eax, huffmanTreeSize
+	mov [esi + type priorityQueue * 2] , eax
+	
+	mov eax, maxValue
+	mov[esi + type priorityQueue * 3], eax
+	mov esi, offset priorityQueue
+
+	call sortPQ
+	dec priorityQueueSize
+	inc huffmanTreeSize
+
+	RET
+reSortPQ ENDP
 
 END main
-
-
-
