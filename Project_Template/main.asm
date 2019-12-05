@@ -33,21 +33,25 @@ huffmanTreeSize dword 0
 ;--------------------------------------------------------------------------
 ; string for testing
 ;--------------------------------------------------------------------------
-testingString byte "howaree";
+inputString byte "howaree";
 
 
 .code
 main PROC
 	
-	CALL constructOccurrencesArray
+	CALL constructOccurArray
 
 	exit
 main ENDP
 
-constructOccurrencesArray PROC
+;--------------------------------------------------------------------------
+; Given a string it creates an occurrences array --> priorityQueue
+; Fills Leaves nodes in huffmanTree
+;--------------------------------------------------------------------------
+constructOccurArray PROC
 	
-	mov ecx, lengthof testingString
-	mov esi, offset testingString
+	mov ecx, lengthof inputString
+	mov esi, offset inputString
 	mov edi, offset priorityQueue
 
 	loopOverInputSting:
@@ -62,11 +66,11 @@ constructOccurrencesArray PROC
 		jz emptyPriorityQueue
 		loopOverOccerrenceArray:
 			cmp [esi + type priorityQueue], eax
-			jnz continue		
+			jnz noEqualChars		
 			inc dword ptr [esi]
 			jmp foundOccurrence
 
-			continue:
+			noEqualChars:
 			add esi, type priorityQueue
 			add esi, type priorityQueue
 			add esi, type priorityQueue
@@ -85,11 +89,33 @@ constructOccurrencesArray PROC
 		inc esi
 	loop loopOverInputSting
 
-	mov eax, priorityQueueSize
-	call writedec
+	mov ecx, priorityQueueSize
+	mov esi, offset priorityQueue
+	mov edi, offset huffmanTree
+	fillHuffmanTreeLeaves:
+		
+		mov eax, [esi + type priorityQueue]
+		mov [edi], eax
+
+		mov eax, huffmanTreeSize
+		mov dword ptr [esi + type priorityQueue + type priorityQueue], eax
+
+		add esi, type priorityQueue
+		add esi, type priorityQueue
+		add esi, type priorityQueue
+
+		add edi, type huffmanTree
+		add edi, type huffmanTree
+		add edi, type huffmanTree
+
+		inc huffmanTreeSize
+	Loop fillHuffmanTreeLeaves
+
+	mov esi, offset huffmanTree
+	mov edi, offset priorityQueue
 
 	RET
-constructOccurrencesArray ENDP
+constructOccurArray ENDP
 
 END main
 
