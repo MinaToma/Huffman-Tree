@@ -1,6 +1,7 @@
 INCLUDE Irvine32.inc
 INCLUDE macros.inc
 BUFFER_SIZE = 5000
+BUFFER_SIZE2 = 501
 .DATA
 
 
@@ -63,22 +64,31 @@ filename BYTE 80 DUP(0)
 fileSize DWORD ?
 fileHandle HANDLE ?
 numberOfChar DWORD ?
+
+
+;------------------------------------------------------------------------------------------
+;
+;writeFile
+;
+;-----------------------------------------------------------------------------------------
+buffer2 BYTE BUFFER_SIZE DUP(?)
+filename2 BYTE "output.txt",0
+fileHandle2 HANDLE ?
+stringLength DWORD ?
+bytesWritten DWORD ?
+str1 BYTE "Cannot create file",0dh,0ah,0
+str2 BYTE "Bytes written to file [output.txt]:",0
+str3 BYTE "Enter up to 500 characters and press"
+	BYTE "[Enter]: ",0dh,0ah,0
+
+
+;---------------------------------------------------
+
 ;--------------------------------------------------------------------------
 ; TODO write disc readCompressionFile
 ;compression
 ;--------------------------------------------------------------------------
-alphabe byte 2000 dup(?)
-alphabetLenght dword 0
 
-tree DWORD 2000 dup(?)
-treeLenght dword 0
-
-nodeCount DWORD -1
-nodes DWORD 2000 dup(?)
-nodesOffset DWORD ?
-nodesOffsetCount DWORD ?
-ecx_temp1 DWORD ?
-zero DWORD 0
 
 ;--------------------------------------------------------------------------
 ; TODO write disc readheader
@@ -94,26 +104,86 @@ _countCharLenght DWORD 0
 ;--------------------------------------------------------------------------
 ; TODO write disc readdDecompressionFile
 ;--------------------------------------------------------------------------
+alphabe byte 2000 dup(?)
+alphabetLenght dword 0               ;;;;;;;;;;;;;;; TODO remb
+
+tree DWORD 2000 dup(?)
+treeLenght dword 0
+
+nodeCount DWORD -1				 ;;;;;;;;;;;;;;; TODO remb
+nodes DWORD 2000 dup(?)
+nodesOffset DWORD ?
+nodesOffsetCount DWORD ?
+ecx_temp1 DWORD ?
+zero DWORD 0
+
+
+;--------------------------------------------------------------------------
+; TODO write disc fillData
+;--------------------------------------------------------------------------
+arrOfNumberOfRepeated DWORD 2000 dup(-1)
+arrOfAlphabe DWORD 2000 dup(-1)
+arrOfNodesPos DWORD 2000 dup(-1)
+arrOfLeftChildren DWORD 2000 dup(-2)
+arrOfRightChildren DWORD 2000 dup(-2)
+
+count dword  0 ;for nodes array
+count2 dword 0 ;for tree array
+count3 dword 0 ;for fill data array(Pis &Rep)
+count4 dword 0 ;for number of elem in (arrOfNumberOfRepeated & arrOfNodesPos)
+count5 dword 0 ;for fill array (arrOfLeftChildren & arrOfRightChildren)
+count6 dword 0 ;for fill array (arrOfAlphabe)
+
+
+
+_none dword -1
+
+count_Node dword ?  ; use in( Find_Node_Position  && Get_Node_Position) as counter 
+
+
+
+
+leftCh DWORD ?
+leftPos DWORD ?
+rightCh DWORD ?
+rightPos DWORD ?
+
+
 
 ;==========================================================================
 ;==========================================================================
 ;==========================================================================
 
+
+
+;""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Find_Node_Position PROTO  arr_find:PTR DWORd   , type_Array : DWORD ,    arrCount:DWORD  ,    val2:DWORD
+Save_Val_IN_Array PROTO   arr_Find:PTR DWORd   , type_Array : DWORD , val_Pos:DWORD , val: DWORD
+Get_Val_From_Array PROTO    arr_Find:PTR DWORd   , type_Array : DWORD , val_Pos:DWORD 
+;""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+;********************************************************
+					;use for test
 
 arr byte 4 dup(?)
 arr2 byte "123456789",0
 arr3 byte 1,2,3,4,5,6,7,8,9
 nu dword ?
 test1 byte ?
+tt dword 0
 
+;****************************************************
 .code
 main PROC
 	
+
 	;CALL constructOccurPQ
 	;CALL constructTree
 
-	;C:\Users\Mahmo\Desktop\prog_3\ass\test.tx
+	;C:\Users\Mahmo\Desktop\prog_3\ass\test.txt
 	;call readAllFile
+
+	;call Save_Data_IN_File
 
 	;call readCompressionFile 
 	;mov edx , ecx
@@ -121,8 +191,55 @@ main PROC
 	;call crlf
 
 
-	call readDecompressionFile
+	;mov edx , 12
+	;test dl , 00000001b
+	;jz _even
+	;	call readdec
+	;	jmp oodd
+	;_even:
+	;---------------------------------------------------------------------
+	;mov edx , 100
+;	call find_x
 
+
+	;--------------------------------------------------------------------
+	call readDecompressionFile
+	
+	call FillData
+
+	mov ecx , nodeCount 
+	inc ecx
+	hh:
+
+	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , tt
+	call writedec
+	call crlf
+	INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos  ,type arrOfNodesPos    , tt
+	call writedec
+	call crlf
+	;INVOKE Get_Val_From_Array , OFFSET arrOfLeftChildren  ,type arrOfLeftChildren    , tt
+	;call writedec
+	;call crlf
+	INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren  ,type arrOfRightChildren    , tt
+	call writedec
+	call crlf
+		mWrite <"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",0dh,0ah>	
+
+	inc tt
+	loop hh
+
+
+	mov edx , offset arrOfNumberOfRepeated
+	mov ecx , 10
+	Ld:
+		mov eax , [edx]
+		add edx , 4
+		call writedec
+		call crlf
+	LOOP ld
+
+
+	oodd:
 	mov ecx , treeLenght
 
 	mov edx , offset tree
@@ -249,7 +366,8 @@ LL:
 	call writedec
 	mov  eax , offset  arr
 	call writedec
-	exit
+	quit:
+		exit
 main ENDP
 
 
@@ -500,6 +618,63 @@ readAllFile ENDP
 
 
 
+
+;------------------------------------------------------------------------------
+
+
+;--------------------------------------------------------------------------
+; TODO write disc
+;--------------------------------------------------------------------------
+;TOOD edit size buffer2 && Param..
+Save_Data_IN_File PROC
+
+	; Create a new text file.
+	mov edx,OFFSET filename2
+	call CreateOutputFile
+	mov fileHandle2,eax
+
+
+	; Check for errors.
+	cmp eax, INVALID_HANDLE_VALUE			; error found?
+	jne file_ok								; no: skip
+	mov edx,OFFSET str1						; display error
+	call WriteString
+	jmp end_Save_Data_IN_File
+	
+	
+	file_ok:
+	; Ask the user to input a string.
+	mov edx,OFFSET str3						; "Enter up to ...."
+	call WriteString
+	mov ecx,BUFFER_SIZE						; Input a string
+	mov edx,OFFSET buffer2
+	call ReadString 
+	mov stringLength,eax					; counts chars entered
+
+
+	;Write the buffer2 to the output file.
+	mov eax,fileHandle2
+	mov edx,OFFSET buffer2
+	mov ecx,stringLength
+	call WriteToFile
+	mov bytesWritten,eax					; save return value
+	mov eax , fileHandle2 ;;;;;habd
+	call CloseFile
+
+
+	; Display the return value. 
+	mov edx,OFFSET str2						; "Bytes written"
+	call WriteString
+	mov eax,bytesWritten
+	call WriteDec
+	call Crlf
+
+
+	end_Save_Data_IN_File:
+		RET
+Save_Data_IN_File ENDP
+;-----------------------------------------------------------------------------
+
 ;--------------------------------------------------------------------------
 ; TODO write disc
 ;--------------------------------------------------------------------------
@@ -617,7 +792,7 @@ readDecompressionFile ENDP
 
 
 ;--------------------------------------------------------------------------
-; TODO write disc readAlphabet + save reg
+; TODO write disc readAlphabet + save reg + related reg || flag
 ;--------------------------------------------------------------------------
 
 
@@ -655,6 +830,332 @@ readAlphabet PROC
 		sub numberOfChar , 2
 		RET
 readAlphabet ENDP
+
+
+
+
+;--------------------------------------------------------------------------
+; TODO write disc readAlphabet + save reg + related reg || flag
+;--------------------------------------------------------------------------
+
+FillData PROC
+	mov ecx , nodeCount
+	mov count4 , ecx
+	;inc count4
+	inc ecx
+	mov esi , offset nodes
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3 , [esi]
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count3 , 0
+	;inc count3
+	;dec count4
+
+
+	L_N:
+	dec ecx
+
+	mov esi , count4
+	cmp esi , zero
+	je end_FillData
+	
+	
+	;	;add in arrOFNumberOfRepeated
+	
+	
+	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3
+	;cmp eax , _none
+	;je end_FillData
+
+
+
+
+	push ecx
+
+	call Get_Child
+
+	pop ecx
+
+
+	inc count3
+	inc ecx
+	LOOP L_N
+
+
+	
+
+	end_FillData:
+	RET
+fillData ENDP
+
+;------------------------------------------------------
+
+
+;----------------------------------------------------
+Get_Child PROC  uses edx ecx
+	;push edx
+
+;	push ecx
+
+	;mov ecx , count2
+	;mov ebx ,[eax+ecx*4] 
+
+	inc count2
+	INVOKE Get_Val_From_Array , OFFSET tree ,type tree   , count2
+	mov ebx , eax
+
+
+	cmp ebx , zero
+	je	leftCh_Zero
+	jmp leftCh_Not_Zero
+	leftCh_Zero:
+		mov leftPos   , -1
+		jmp right
+		;mov edi , offset arrOfLeftChildren
+		;INVOKE Save_Val_IN_Array , OFFSET arrOfLeftChildren ,type arrOfLeftChildren   , count3 , -1
+
+
+	push eax
+	;call Get_Node_Position
+	;mov eax , offset nodes
+	leftCh_Not_Zero:
+		mov leftCh , ebx
+		INVOKE   Find_Node_Position , OFFSET nodes, type nodes , nodeCount , ebx
+		mov leftPos  , eax
+	
+	
+
+	pop eax
+	mov edi , OFFSET arrOfLeftChildren
+
+
+
+	;push ecx
+	mov esi , count3
+	mov [edi+esi*4] , ebx
+	;pop ecx
+
+
+
+	
+	right:
+	inc count2
+	;inc ecx 
+	INVOKE Get_Val_From_Array , OFFSET tree ,type tree   , count2
+	mov ebx , eax
+
+	cmp ebx , zero
+	je	rightCh_Zero
+	jmp rightCh_Not_Zero
+	rightCh_Zero:
+		mov rightPos   , -1
+		;INVOKE Save_Val_IN_Array , OFFSET arrOfRightChildren ,type arrOfRightChildren   , count3 , -1
+		jmp end_Get_Child
+
+	rightCh_Not_Zero:
+		mov rightCh , ebx 
+		INVOKE   Find_Node_Position , OFFSET nodes, type nodes  , nodeCount , ebx
+		mov rightPos  , eax
+	;call Get_Node_Position
+
+	;mov edx , OFFSET arrOfRightChildren 
+
+	
+	INVOKE Save_Val_IN_Array , OFFSET arrOfRightChildren , type arrOfRightChildren , count5 , rightPos
+	INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren ,type arrOfRightChildren   , count5								;for test
+
+	INVOKE Save_Val_IN_Array , OFFSET arrOfLeftChildren  , type arrOfLeftChildren  , count5 , leftPos 
+	INVOKE Get_Val_From_Array , OFFSET arrOfLeftChildren ,type arrOfLeftChildren   , count5									;for test
+
+	;;	add  left and right ch to  arrOfNumberOfRepeated  and arrOfNodesPos 
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated , type arrOfNumberOfRepeated , count5 , leftCh 
+	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count5							;for test
+
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , count5 , leftPos 
+	INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count5											;for test
+
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated , type arrOfNumberOfRepeated , count5 , rightCh 
+	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3							;for test
+
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , count5 , rightPos 
+	INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count3											;for test
+
+	sub count4 , 2
+
+
+
+	end_Get_Child:
+;		pop ecx
+;		pop edx
+		RET
+
+
+Get_Child ENDP
+
+;----------------------------------------------------
+;Get_Node_Position
+;OFFSET arr
+;arrCount
+;val
+;xx PROC uses edx
+
+; how to use uses 
+comment !  
+find_x PROC  uses edx
+	mov edx , 10
+RET
+find_x ENDP
+!
+;---------------------------------------------------------
+
+;---------------------------------------------------------
+Save_Val_IN_Array PROC  arr_Find:PTR DWORd , type_Array : DWORD , val_Pos:DWORD , val: DWORD 
+
+	push edx
+	push esi
+	push eax
+
+	mov edx , 0
+	mov esi , val_Pos
+	mov eax , type_Array
+	mul esi
+
+	mov edx , arr_Find
+	mov esi , val
+	mov [edx+ eax] , esi
+
+	end_Save_Val_IN_Array:
+		pop eax
+		pop esi
+		pop edx
+		RET
+
+Save_Val_IN_Array ENDP
+;---------------------------------------------------------
+
+
+;---------------------------------------------------------
+
+Get_Val_From_Array PROC  arr_Find:PTR DWORd , type_Array : DWORD , val_Pos:DWORD
+
+	push edx
+	push esi
+
+
+	mov edx , 0
+	mov esi , val_Pos
+	mov eax , type_Array
+	mul esi
+	mov esi , eax
+
+	mov edx , arr_Find
+	mov eax , [edx+ esi]
+
+	end_Get_Val_From_Array:
+		
+		pop esi
+		pop edx
+		RET
+
+Get_Val_from_Array ENDP
+
+;---------------------------------------------------------
+
+
+
+
+
+
+
+
+;---------------------------------------------------------
+
+
+Find_Node_Position PROC  arr_find:PTR DWORd , type_Array : DWORD , arrCount:DWORD , val2 :DWORD 
+
+	push ecx
+	push ebx 
+	push edx
+	push esi
+		
+
+		mov count_Node , 0
+		mov ecx  , arrCount 
+		LL:
+			dec ecx
+			;use eax as counter try
+			mov edx , 0
+			mov eax , count_Node
+			mov esi , type_Array
+			mul esi
+			;mov esi , eax
+			mov ebx , val2
+			mov edx , arr_find
+			cmp ebx , [edx+eax] ; TODO USE type of not 4
+			je find
+
+			inc count_Node
+			;inc ecx
+		LOOP LL
+		mov eax , -1
+		jmp end_Find_Node_Position
+
+	find:
+		mov eax , count_Node
+		end_Find_Node_Position:
+			pop esi
+			pop edx	
+			pop ebx 
+			pop ecx
+			RET
+
+
+
+		
+Find_Node_Position ENDP
+
+;---------------------------------------------------------
+
+
+;---------------------------------------------------------
+ Get_Node_Position PROC
+	push ecx
+	push eax 
+	push edx
+		
+
+		mov edx , OFFSET nodes
+		mov count_Node , 0
+		mov ecx  , nodeCount 
+		LL:
+			dec ecx
+			;use eax as counter try
+			mov eax , count_Node
+			cmp ebx , [edx+eax*4]
+			je find
+
+			inc count_Node
+			inc ecx
+		LOOP LL
+		mov ebx , -1
+		jmp end_Get_Node_Position
+
+	find:
+		mov ebx , count_Node
+		end_Get_Node_Position:
+			pop edx	
+			pop eax 
+			pop ecx
+			RET
+
+Get_Node_Position ENDP
+
+
+;---------------------------------------------------------
+
+
+
+;--------------------------------------------
+;---------------------------------------------
+
 
 
 END main
