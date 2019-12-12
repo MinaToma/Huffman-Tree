@@ -127,7 +127,9 @@ arrOfNodesPos DWORD 2000 dup(-1)
 arrOfLeftChildren DWORD 2000 dup(-1)
 arrOfRightChildren DWORD 2000 dup(-1)
 arrTypeOfNode Dword 2000 dup(-2)	
-arrCode_Node Dword 2000 dup(-2)
+arrCode_Node Dword 2000 dup(00000000000000000000000000000000b)
+arrLevelOfNode Dword 2000 dup(-2)	
+
 
 count dword  0 ;for nodes array
 count2 dword 0 ;for tree array
@@ -149,10 +151,17 @@ leftCh DWORD ?
 leftPos DWORD ?
 rightCh DWORD ?
 rightPos DWORD ?
+nodeCode Dword ?
 
-
+count7 dword 0 ; use to cal # of levels
+count8 dword 0 ; use to cal # of levels
+count9 dword 0 ; use to cal # of levels
+levelCount Dword 0
 
 ;==========================================================================
+
+lengthOfDecompressionString Dword 0
+
 ;==========================================================================
 ;==========================================================================
 
@@ -163,6 +172,7 @@ Find_Node_Position PROTO  arr_find:PTR DWORd   , type_Array : DWORD ,    arrCoun
 Save_Val_IN_Array PROTO   arr_Find:PTR DWORd   , type_Array : DWORD , val_Pos:DWORD , val: DWORD
 Get_Val_From_Array PROTO    arr_Find:PTR DWORd   , type_Array : DWORD , val_Pos:DWORD 
 Set_Type_Node PROTO   leftChild : DWORD , rightChild:DWORD  
+Decompression_String PROTO decompressionString:PTR Byte , compressionString :PTR Byte , lengthOfCompressionString :DWORD 
 ;""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 ;********************************************************
@@ -174,10 +184,115 @@ arr3 byte 1,2,3,4,5,6,7,8,9
 nu dword ?
 test1 byte ?
 tt dword 0
+_t byte 01100110b , 11001011b , 11011001b , 10111010b
+__t byte 4 dup(?)
+__S byte 20 dup (?)
 
+
+Qcount dword 0
+Qcount1 dword 0
+Qp dword 0
 ;****************************************************
 .code
 main PROC
+	;comment $
+	call readDecompressionFile
+	call FillData
+	INVOKE Decompression_String ,  offset __S , offset _t , 4
+	mov edx , offset __S
+	call writestring
+	mov esi , offset __S
+	mov edx , offset   _t
+	mov ecx , 4
+	r:
+	mov bl , [edx]
+	push ecx
+	mov ecx , 8 
+	o:
+		shl bl , 1
+		call dumpRegs
+		call QQQ
+	loop o
+	inc edx
+	pop ecx
+	loop r
+	mov edx , offset   __S
+	call writestring
+	 clc
+		call dumpRegs
+		jnc l
+	 stc
+		call dumpRegs
+		;jc l
+		
+		;$
+	call readDecompressionFile
+	call FillData
+
+
+	mov esi , offset __t
+	mov edx , offset _t
+	;call writestring
+	mov ecx , 4
+	l:
+
+
+	mov bl , [edx+ecx]
+	mov [esi+ecx] ,bl
+	mov al , bl
+	call writechar
+	call crlf
+	loop l
+
+	mov ecx , 4
+	mov esi , offset _t
+	mov ebx , 0
+	Q:
+	;mov bl ,[esi]
+	mov ecx , 8
+	push ecx
+	lq:
+		call QQQ
+		;inc Qcount1 
+	pop ecx
+	loop lq
+	pop ecx
+	inc esi
+	;inc ebx
+
+	loop Q
+
+
+	QQQ PROC
+		;shl bl , 1
+		;call dumpRegs
+		jc right
+		left:
+			INVOKE Get_Val_From_Array , OFFSET arrOfLeftChildren   ,type arrOfLeftChildren     , Qp
+			mov Qp , eax
+
+			jmp _ee
+
+		right:
+			INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren   ,type arrOfRightChildren     , Qp
+			mov Qp , eax
+
+			_ee:
+			
+			INVOKE Get_Val_From_Array , OFFSET arrTypeOfNode   ,type arrTypeOfNode     , Qp
+			cmp eax , 108
+			jne _z
+			INVOKE Get_Val_From_Array , OFFSET arrOfAlphabe     ,type arrOfAlphabe       , Qp
+			call writechar
+			mov [esi] , al
+			inc esi
+			mov Qp , 0
+			_z:
+				RET
+	QQQ ENDP
+
+
+	call Save_Data_IN_File
 
 	mov edi , offset arr3
 	mov bl , [edi]
@@ -206,6 +321,7 @@ main PROC
 	;---------------------------------------------------------------------
 		;--------------------------------------------------------------------
 	call readDecompressionFile
+	call FillData
 	
 	;mov al , 'b' 
 	;call readchar
@@ -214,7 +330,7 @@ main PROC
 	;call writechar
 
 
-	call FillData
+	;call FillData
 
 	mov ecx , nodeCount 
 
@@ -233,12 +349,16 @@ main PROC
 	;INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren  ,type arrOfRightChildren    , tt
 	;call writeint
 	;call crlf
-	INVOKE Get_Val_From_Array , OFFSET arrTypeOfNode  ,type arrTypeOfNode    , tt
-	call writechar
-	call crlf
-	INVOKE Get_Val_From_Array , OFFSET arrOfAlphabe   ,type arrOfAlphabe     , tt
+	;INVOKE Get_Val_From_Array , OFFSET arrTypeOfNode  ,type arrTypeOfNode    , tt
+	;call writechar
+	;call crlf
+	;INVOKE Get_Val_From_Array , OFFSET arrOfAlphabe   ,type arrOfAlphabe     , tt
+	;call writedec
+	;call crlf
+	INVOKE Get_Val_From_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , tt
 	call writedec
 	call crlf
+	
 		mWrite <"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",0dh,0ah>	
 
 	inc tt
@@ -525,15 +645,19 @@ Save_Data_IN_File PROC
 	mov edx,OFFSET str3						; "Enter up to ...."
 	call WriteString
 	mov ecx,BUFFER_SIZE						; Input a string
-	mov edx,OFFSET buffer2
-	call ReadString 
-	mov stringLength,eax					; counts chars entered
-
+		;mov edx,OFFSET buffer2
+		;call ReadString 
+		;mov stringLength,eax					; counts chars entered
+		mov edx , offset __t
+		mov eax , 4
 
 	;Write the buffer2 to the output file.
 	mov eax,fileHandle2
-	mov edx,OFFSET buffer2
-	mov ecx,stringLength
+	;	mov edx,OFFSET buffer2
+	;	mov ecx,stringLength
+	mov edx , offset __t
+	mov ecx , 4
+
 	call WriteToFile
 	mov bytesWritten,eax					; save return value
 	mov eax , fileHandle2 ;;;;;habd
@@ -724,38 +848,52 @@ FillData PROC
 	mov esi , offset nodes
 	INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3 , [esi]
 	INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count3 , 0
+	cmp nodeCount , 1
+	jne Skip_FillData
+	mov esi , offset alphabe 
+	INVOKE Save_Val_IN_Array , OFFSET arrOfAlphabe  ,type arrOfAlphabe    , count3 , [esi]
+	INVOKE Save_Val_IN_Array , OFFSET arrOfLeftChildren   ,type arrOfLeftChildren     , count3 , -1
+	INVOKE Save_Val_IN_Array , OFFSET arrOfRightChildren   ,type arrOfRightChildren     , count3 , -1
+	INVOKE Save_Val_IN_Array , OFFSET arrTypeOfNode  ,type arrTypeOfNode    , count3 , 108
+	INVOKE Save_Val_IN_Array , OFFSET arrCode_Node   ,type arrCode_Node     , count3 , 0
+	
+	jmp end_FillData
 	;inc count3
 	;dec count4
 
+	Skip_FillData:
+		mov count7  , 0
+		inc levelCount  
+		mov count8 , 0
+		mov count9 , 1
+		L_N:
+		dec ecx
 
-	L_N:
-	dec ecx
-
-	mov esi , treeLenght
-	cmp count2 , esi 
-	je end_FillData
+		mov esi , treeLenght
+		cmp count2 , esi 
+		je end_FillData
 	
 	
-	;	;add in arrOFNumberOfRepeated
+		;	;add in arrOFNumberOfRepeated
 	
 	
-	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3
-	;cmp eax , _none
-	;je end_FillData
+		INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count3
+		;cmp eax , _none
+		;je end_FillData
 
 
 
 
-	push ecx
+		push ecx
 
-	call Get_Child
+		call Get_Child
 
-	pop ecx
+		pop ecx
 
 
-	inc count3
-	inc ecx
-	LOOP L_N
+		inc count3
+		inc ecx
+		LOOP L_N
 
 
 	
@@ -777,8 +915,10 @@ Get_Child PROC  uses edx ecx
 	;mov ebx ,[eax+ecx*4] 
 
 	inc count2
+	
 	INVOKE Get_Val_From_Array , OFFSET tree ,type tree   , count2
 	mov ebx , eax
+
 
 
 	cmp ebx , zero
@@ -786,6 +926,7 @@ Get_Child PROC  uses edx ecx
 	;je	leftCh_Zero
 	leftCh_Zero:
 		mov leftPos   , -1
+
 		jmp right
 		;mov edi , offset arrOfLeftChildren
 		;INVOKE Save_Val_IN_Array , OFFSET arrOfLeftChildren ,type arrOfLeftChildren   , count3 , -1
@@ -811,17 +952,26 @@ Get_Child PROC  uses edx ecx
 
 		INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , esi , leftPos 
 		;INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count4											;for test
+		
+		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , count3
+		shl eax , 1
+		INVOKE Save_Val_IN_Array , OFFSET arrCode_Node ,type arrCode_Node   , esi , eax
+
+;		INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , esi , count7
+;		add count8 , 2
+;		dec count9
+				
 		dec count4
 	
 
 	;pop eax
-	mov edi , OFFSET arrOfLeftChildren
+	;mov edi , OFFSET arrOfLeftChildren
 
 
 
 	;push ecx
-	mov esi , count3
-	mov [edi+esi*4] , ebx
+	;mov esi , count3
+	;mov [edi+esi*4] , ebx
 	;pop ecx
 
 
@@ -829,6 +979,7 @@ Get_Child PROC  uses edx ecx
 	
 	right:
 	inc count2
+	
 	;inc ecx 
 	INVOKE Get_Val_From_Array , OFFSET tree ,type tree   , count2
 	mov ebx , eax
@@ -855,6 +1006,17 @@ Get_Child PROC  uses edx ecx
 
 		INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , esi , rightPos 
 		;INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count4											;for test
+	
+		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , count3
+		shl eax , 1
+		or al , 00000001b
+		INVOKE Save_Val_IN_Array , OFFSET arrCode_Node ,type arrCode_Node   , count2 , eax
+
+		;INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , esi , count7
+		;add count8 , 2
+		;dec count9
+
+	
 		dec count4
 
 
@@ -863,7 +1025,7 @@ Get_Child PROC  uses edx ecx
 	;mov edx , OFFSET arrOfRightChildren 
 
 	skip:
-	
+
 	INVOKE Save_Val_IN_Array , OFFSET arrOfRightChildren , type arrOfRightChildren , count5 , rightPos
 	INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren ,type arrOfRightChildren   , count5								;for test
 
@@ -872,7 +1034,14 @@ Get_Child PROC  uses edx ecx
 	INVOKE Set_Type_Node, leftPos , rightPos
 
 	inc count5
-
+	comment /
+	cmp count9 , 0
+	jne end_Get_Child
+	mov esi , count8
+	mov count9 , esi
+	mov count8 , 0
+	inc count7
+	/
 	comment :
 	;;	add  left  ch to  arrOfNumberOfRepeated  and arrOfNodesPos 
 	INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated , type arrOfNumberOfRepeated , count5 , leftCh 
@@ -1067,23 +1236,38 @@ Set_Type_Node PROC   leftChild : DWORD , rightChild:DWORD
 	movzx ebx , bl
 	INVOKE Save_Val_IN_Array , OFFSET arrOfAlphabe  , type arrOfAlphabe  , count5 , ebx
 	inc count6
-	jmp end_Set_Type_Node
+
+	INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , count5 , count7
+	dec count9
+	jmp skip_Set_Type_Node
 		
 	not_Leaf_Node:
-	mov al , 'p'
-	push eax
-	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count5
+		INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , count5 , count7
+		add count8 , 2
+		dec count9
 
-	INVOKE Save_Val_IN_Array , OFFSET arrOfAlphabe  , type arrOfAlphabe  , count5 , eax
-	pop eax
+		mov al , 'p'
+		push eax
+		INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count5
+
+		INVOKE Save_Val_IN_Array , OFFSET arrOfAlphabe  , type arrOfAlphabe  , count5 , eax
+		pop eax
 
 
-	
+	skip_Set_Type_Node:
+		cmp count9 , 0
+		jne end_Set_Type_Node
+		mov esi , count8
+		mov count9 , esi
+		mov count8 , 0
+		inc count7
 
 		
 	end_Set_Type_Node:
 		movzx eax , al
 		INVOKE Save_Val_IN_Array , OFFSET arrTypeOfNode , type arrTypeOfNode , count5 , eax
+
+		
 			pop ebx 
 			pop edi
 			pop eax
@@ -1095,9 +1279,65 @@ Set_Type_Node PROC   leftChild : DWORD , rightChild:DWORD
 Set_Type_Node ENDP
 ;-----------------------------------------------------------------
 
+;-----------------------------------------------------------------
+Decompression_String PROC decompressionString:PTR Byte , compressionString :PTR Byte , lengthOfCompressionString :DWORD 
+	
+	push esi 
+	push edx
+	push ecx
+	push ebx
+	mov esi , decompressionString
+	mov edx , compressionString
+	mov ecx , lengthOfCompressionString
+	r:
+	mov bl , [edx]
+	push ecx
+	mov ecx , 8 
+	o:
+		shl bl , 1
+		;call dumpRegs
+		call Set_Decompression_String
+	loop o
+	inc edx
+	pop ecx
+	loop r
+	
+	pop ebx
+	pop ecx
+	pop edx
+	pop esi 
+	RET
+Decompression_String ENDP
+;-----------------------------------------------------------------
 
+;---------------------------------------------
+	Set_Decompression_String PROC
+		
+		jc right
+		left:
+			INVOKE Get_Val_From_Array , OFFSET arrOfLeftChildren   ,type arrOfLeftChildren     , Qp
+			mov Qp , eax
 
-;--------------------------------------------
+			jmp _ee
+
+		right:
+			INVOKE Get_Val_From_Array , OFFSET arrOfRightChildren   ,type arrOfRightChildren     , Qp
+			mov Qp , eax
+
+			_ee:
+			
+			INVOKE Get_Val_From_Array , OFFSET arrTypeOfNode   ,type arrTypeOfNode     , Qp
+			cmp eax , 108
+			jne _z
+			INVOKE Get_Val_From_Array , OFFSET arrOfAlphabe     ,type arrOfAlphabe       , Qp
+			;call writechar
+			mov [esi] , al
+			inc	lengthOfDecompressionString
+			inc esi
+			mov Qp , 0
+			_z:
+				RET
+	Set_Decompression_String ENDP
 ;---------------------------------------------
 
 
