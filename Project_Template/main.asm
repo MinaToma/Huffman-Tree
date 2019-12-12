@@ -825,6 +825,8 @@ Get_Child PROC  uses edx ecx
 		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , count3
 		shl eax , 1
 		INVOKE Save_Val_IN_Array , OFFSET arrCode_Node ,type arrCode_Node   , esi , eax
+				mov eax , 20000
+		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , esi
 
 ;		INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , esi , count7
 ;		add count8 , 2
@@ -879,7 +881,9 @@ Get_Child PROC  uses edx ecx
 		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , count3
 		shl eax , 1
 		or al , 00000001b
-		INVOKE Save_Val_IN_Array , OFFSET arrCode_Node ,type arrCode_Node   , count2 , eax
+		INVOKE Save_Val_IN_Array , OFFSET arrCode_Node ,type arrCode_Node   , esi , eax
+		mov eax , 20000
+		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , esi
 
 		;INVOKE Save_Val_IN_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , esi , count7
 		;add count8 , 2
