@@ -1,4 +1,4 @@
-INCLUDE Irvine32.inc
+﻿INCLUDE Irvine32.inc
 INCLUDE macros.inc
 BUFFER_SIZE = 5000
 BUFFER_SIZE2 = 501
@@ -38,7 +38,7 @@ huffmanTreeSize dword 0
 ;--------------------------------------------------------------------------
 ; string for testing
 ;--------------------------------------------------------------------------
-inputString byte "howaree";
+inputString byte "howare";
 
 
 ;--------------------------------------------------------------------------
@@ -197,6 +197,45 @@ Qp dword 0
 .code
 main PROC
 	;comment $
+
+	call constructOccurPQ
+
+	;call constructTree
+	mov edx , offset priorityQueue
+	;mov ecx , priorityQueueSize
+	add ecx , 11
+	LL:
+		push ecx
+		mov ecx , 3
+		oo:
+			mov eax , [edx]
+			call writedec
+			call crlf
+			add edx , 4 
+		loop oo
+		mWrite <"**********************************************",0dh,0ah>	
+
+		pop ecx
+	loop LL
+
+	mov edx , offset huffmanTree
+	mov ecx , huffmanTreeSize
+	;add ecx , 5
+
+	L:
+		push ecx
+		mov ecx , 3
+		o:
+			mov eax , [edx]
+			call writedec
+			call crlf
+			add edx , 4 
+		loop o
+		mWrite <"++++++++++++++++++++++++++++++++++++++",0dh,0ah>	
+
+		pop ecx
+	loop L
+
 	call readDecompressionFile
 	call FillData
 		INVOKE Shift_Left_ArrCode_Node , offset arrCode_Node  , offset arrLevelOfNode , nodeCount 
@@ -274,7 +313,7 @@ constructOccurPQ PROC
 
 		mov dword ptr [esi], 1
 		mov [esi + type priorityQueue], eax
-
+		
 		inc priorityQueueSize
 
 		foundOccurrence:
