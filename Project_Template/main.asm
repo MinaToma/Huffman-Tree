@@ -41,7 +41,7 @@ huffmanTreeSize dword 0
 ; string for testing
 ;--------------------------------------------------------------------------
 inputString byte "howare";
-
+inputString2 byte "fffffffffffffffffffffffffffffffffffffffffffffccccccccccccdddddddddddddeeeeeeeeeeeeeeeeaaaaabbbbbbbbb"
 
 ;--------------------------------------------------------------------------
 ; shift to get next Node
@@ -203,42 +203,14 @@ main PROC
 
 
 		CALL constructOccurPQ
-	mov ecx , 11
-	mov edx , offset priorityQueue
-
 	
-	l1:
-	;	push ecx
-	;	mov ecx , 3
-	;		oo:
-				mov eax , [edx]
-				call writeint
-				call crlf
-				add  edx , 4
-
-				mov eax , [edx]
-				call writechar
-				call writeint
-				call crlf
-				add  edx , 4
-
-				mov eax , [edx]
-				call writeint
-				call crlf
-				add  edx , 4
-
-				call crlf
-	;		loop oo
-	;	pop  ecx 
-	loop l1
-
 	
 	CALL constructTree
 	
 	mov ecx , priorityQueueSize
 	mov edx , offset priorityQueue
 
-	l:
+	lzz:
 	;	push ecx
 	;	mov ecx , 3
 	;		oo:
@@ -261,7 +233,10 @@ main PROC
 				call crlf
 	;		loop oo
 	;	pop  ecx 
-	loop l
+	loop lzz
+
+
+
 
 
 
@@ -407,10 +382,47 @@ constructOccurPQ ENDP
 ;--------------------------------------------------------------------------
 ; Constructs Huffman tree
 ;--------------------------------------------------------------------------
-constructTree PROC
+constructTree PROC uses ecx
 	
 	CALL sortPQ
 	
+
+	comment #
+	mov ecx , priorityQueueSize
+	mov edx , offset priorityQueue
+
+	l12:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writechar
+				call writeint
+				call crlf
+				add  edx , 4
+		mWrite <"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",0dh,0ah>	
+
+;				mov eax , priorityQueueSize
+;				sub eax , ecx
+;				mov [edx] , eax
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop l12
+	#
+		mWrite <"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",0dh,0ah>	
+
+
 	mov esi , priorityQueueSize
 	mov count11 , esi
 	pqSizeNotOne:
@@ -419,8 +431,16 @@ constructTree PROC
 		; First Node
 		;-----------------
 		mov esi, offset priorityQueue
+		mov edi , offset huffmanTree
+		mov ecx , huffmanTreeSize
 		;mov ebx, [esi]
 		
+		
+		mov edx , 0
+		mov eax , 12
+		mul ecx
+		mov ecx , eax
+
 		mov edx , 0
 		mov eax , 12
 		mul count12
@@ -432,10 +452,12 @@ constructTree PROC
 		mov eax, [esi + edx + 8]		
 
 		;mov eax, [esi + type priorityQueue * 2]
-		mov [edi + type huffmanTree], eax				;set left child
+		;mov [edi + type huffmanTree], eax				;set left child
+		
+		mov [edi + ecx + type huffmanTree], eax				;set left child
 
-		call writeint
-		call crlf
+		;call writeint
+		;call crlf
 
 		;add esi, shiftOffset
 		add edx , shiftOffset
@@ -449,23 +471,57 @@ constructTree PROC
 		mov [edi + type huffmanTree * 2], eax
 		\
 		add ebx, [esi + edx ]
-		mov eax, [esi + edx + 8]
-		mov [edi + type huffmanTree * 2], eax			;set right child
+		mov eax, [esi + edx + type priorityQueue * 2]
+		;mov [edi + type huffmanTree * 2], eax			;set right child
+		mov [edi + ecx + type huffmanTree * 2], eax				;set right child
 
-		call writeint
-		call crlf
 
-		mov [edi], ebx									;set value
+		;call writeint
+		;call crlf
 
-		push eax 
-		mov eax , ebx 
-		call writeint									; test
-		call crlf
-		pop eax
+		mov [edi + ecx ], ebx									;set value
+
+		;push eax 
+		;mov eax , ebx 
+		;call writeint									; test
+		;call crlf
+		;pop eax
+		;mWrite <"##########################################################",0dh,0ah>	
 
 		add edi, shiftOffset
 
 		CALL reSortPQ
+
+	comment @
+		mov ecx , priorityQueueSize
+	mov edx , offset priorityQueue
+	lw:;test
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writechar
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writedec
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop lw
+
+	@
+
 		;cmp priorityQueueSize, 1
 		cmp count11, 1
 		jnz pqSizeNotOne
@@ -493,19 +549,30 @@ sortPQ PROC
 		iLoop:
 
 			mov eax, [esi]
+			mov edi , [esi + type priorityQueue * 3]
 			cmp eax, [esi + type priorityQueue * 3]
 			jbe _continue
 
 			xchg eax, [esi + type priorityQueue * 3]
 			mov [esi], eax
 
+				;call writeint
+				;call crlf
+
 			mov eax , [esi + type priorityQueue]
 			xchg eax, [esi + type priorityQueue * 4]
 			mov[esi + type priorityQueue], eax
 
+				;call writechar
+				;call writeint
+				;call crlf
+
 			mov eax , [esi + type priorityQueue  * 2]
-			xchg eax, [esi + type priorityQueue * 5]
-			mov[esi + type priorityQueue * 2], eax
+			;xchg eax, [esi + type priorityQueue * 5]
+			;mov[esi + type priorityQueue * 2], eax
+
+				;call writeint
+				;call crlf
 
 			_continue:
 
@@ -515,6 +582,36 @@ sortPQ PROC
 		mov esi, offset priorityQueue
 		pop ecx
 	loop oLoop
+
+	comment %
+		mov ecx , priorityQueueSize
+		mov edx , offset priorityQueue
+		
+		ls:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add edx , 4
+				mov eax , [edx]
+				call writeint
+				call writechar
+				call crlf
+				add  edx , 4
+;				mov eax , priorityQueueSize
+;				sub eax , ecx
+;				mov [edx] , eax
+				mov eax , [edx]
+				add  edx , 4
+				call writeint
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop ls
+
+	%
 
 	RET
 sortPQ ENDP
@@ -557,7 +654,8 @@ reSortPQ PROC uses edx edi
 	mov [esi + edi ], ebx
 	add edi , 4
 	mov [esi + edi ] , ebx
-	mov eax, huffmanTreeSize
+	;mov eax, huffmanTreeSize
+	mov eax , priorityQueueSize
 	add edi , 4
 	mov [esi + edi] , eax
 
@@ -566,10 +664,14 @@ reSortPQ PROC uses edx edi
 	;mov[esi + type priorityQueue * 3], eax
 	mov esi, offset priorityQueue
 
-	call sortPQ
-	;dec priorityQueueSize
 	inc priorityQueueSize
 	inc huffmanTreeSize
+	call sortPQ
+
+		
+	
+
+	;dec priorityQueueSize
 	dec count11
 	add count12 , 2
 
