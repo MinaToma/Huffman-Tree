@@ -1,4 +1,4 @@
-﻿INCLUDE Irvine32.inc
+INCLUDE Irvine32.inc
 INCLUDE macros.inc
 BUFFER_SIZE = 5000
 BUFFER_SIZE2 = 501
@@ -27,7 +27,9 @@ priorityQueueSize dword 0
 ;	Value				LeftChild			RightChild
 ;--------------------------------------------------------------------------
 huffmanTree dword 2048 dup(-1)
-
+count10 dword 0
+count11 dword 0
+count12 dword 0
 
 ;--------------------------------------------------------------------------
 ;	The size of huffmanTree
@@ -196,45 +198,105 @@ Qp dword 0
 ;****************************************************
 .code
 main PROC
+
+
+
+
+		CALL constructOccurPQ
+	mov ecx , 11
+	mov edx , offset priorityQueue
+
+	
+	l1:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writechar
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop l1
+
+	
+	CALL constructTree
+	
+	mov ecx , priorityQueueSize
+	mov edx , offset priorityQueue
+
+	l:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writechar
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writedec
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop l
+
+
+
+	mov ecx , huffmanTreeSize
+	mov edx , offset huffmanTree
+	ll:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writechar
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop ll
+
+
 	;comment $
 
-	call constructOccurPQ
 
-	;call constructTree
-	mov edx , offset priorityQueue
-	;mov ecx , priorityQueueSize
-	add ecx , 11
-	LL:
-		push ecx
-		mov ecx , 3
-		oo:
-			mov eax , [edx]
-			call writedec
-			call crlf
-			add edx , 4 
-		loop oo
-		mWrite <"**********************************************",0dh,0ah>	
 
-		pop ecx
-	loop LL
-
-	mov edx , offset huffmanTree
-	mov ecx , huffmanTreeSize
-	;add ecx , 5
-
-	L:
-		push ecx
-		mov ecx , 3
-		o:
-			mov eax , [edx]
-			call writedec
-			call crlf
-			add edx , 4 
-		loop o
-		mWrite <"++++++++++++++++++++++++++++++++++++++",0dh,0ah>	
-
-		pop ecx
-	loop L
 
 	call readDecompressionFile
 	call FillData
@@ -313,7 +375,7 @@ constructOccurPQ PROC
 
 		mov dword ptr [esi], 1
 		mov [esi + type priorityQueue], eax
-		
+
 		inc priorityQueueSize
 
 		foundOccurrence:
@@ -349,32 +411,63 @@ constructTree PROC
 	
 	CALL sortPQ
 	
+	mov esi , priorityQueueSize
+	mov count11 , esi
 	pqSizeNotOne:
 		
 		;-----------------
 		; First Node
 		;-----------------
 		mov esi, offset priorityQueue
-		mov ebx, [esi]
+		;mov ebx, [esi]
+		
+		mov edx , 0
+		mov eax , 12
+		mul count12
+		mov edx , eax
 
-		mov eax, [esi + type priorityQueue * 2]
-		mov [edi + type huffmanTree], eax
+		mov ebx, [esi + edx]
 
-		add esi, shiftOffset
+		;mov eax, [esi + type priorityQueue * 2]
+		mov eax, [esi + edx + 8]		
+
+		;mov eax, [esi + type priorityQueue * 2]
+		mov [edi + type huffmanTree], eax				;set left child
+
+		call writeint
+		call crlf
+
+		;add esi, shiftOffset
+		add edx , shiftOffset
 		
 		;-----------------
 		; Second Node
 		;-----------------
+		comment \
 		add ebx, [esi]
 		mov eax, [esi + type priorityQueue * 2]
 		mov [edi + type huffmanTree * 2], eax
+		\
+		add ebx, [esi + edx ]
+		mov eax, [esi + edx + 8]
+		mov [edi + type huffmanTree * 2], eax			;set right child
 
-		mov [edi], ebx
+		call writeint
+		call crlf
+
+		mov [edi], ebx									;set value
+
+		push eax 
+		mov eax , ebx 
+		call writeint									; test
+		call crlf
+		pop eax
 
 		add edi, shiftOffset
 
 		CALL reSortPQ
-		cmp priorityQueueSize, 1
+		;cmp priorityQueueSize, 1
+		cmp count11, 1
 		jnz pqSizeNotOne
 
 		RET
@@ -431,25 +524,54 @@ sortPQ ENDP
 ; removes first two elements and inserts new value (their sum)
 ; decreases prioirityQueueSize
 ;--------------------------------------------------------------------------
-reSortPQ PROC
+reSortPQ PROC uses edx edi
 
 	mov esi, offset priorityQueue
-
+	comment>
 	mov ebx, [esi]
 	add ebx, [esi + type priorityQueue * 3]
-	
+	>
+	mov edi , count10   
+	mov ebx, [esi + edi]
+	add count10 , 12
+	mov edi , count10  
+	add ebx, [esi + edi]
+	add count10 , 12
+
+
+
+	comment :
 	mov [esi], ebx
 	mov [esi + type priorityQueue] , ebx
 	mov eax, huffmanTreeSize
 	mov [esi + type priorityQueue * 2] , eax
+	:
+
+	mov edi , priorityQueueSize
+	mov edx , 0
+	mov eax , 12
+	mul edi
+	mov edi , eax
 	
-	mov eax, maxValue
-	mov[esi + type priorityQueue * 3], eax
+
+	mov [esi + edi ], ebx
+	add edi , 4
+	mov [esi + edi ] , ebx
+	mov eax, huffmanTreeSize
+	add edi , 4
+	mov [esi + edi] , eax
+
+
+	;mov eax, maxValue
+	;mov[esi + type priorityQueue * 3], eax
 	mov esi, offset priorityQueue
 
 	call sortPQ
-	dec priorityQueueSize
+	;dec priorityQueueSize
+	inc priorityQueueSize
 	inc huffmanTreeSize
+	dec count11
+	add count12 , 2
 
 	RET
 reSortPQ ENDP
