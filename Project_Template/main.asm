@@ -49,6 +49,19 @@ shiftOffset dword 12
 ;--------------------------------------------------------------------------
 maxValue dword 1000000000
 
+;--------------------------------------------------------------------------
+; 	This data structure to hold huffman tree code  
+;	Data will be like
+;	FirstDword			SecondDword
+;	Key					binaryCode
+;--------------------------------------------------------------------------
+huffmanTreeCode dword 2048 dup(-1)
+
+;--------------------------------------------------------------------------
+; go to next code at huffmanTreeCode
+;--------------------------------------------------------------------------
+nextValHuffmanTreeCode dword 8
+
 ;==========================================================================
 ;==========================================================================
 ;==========================================================================
@@ -59,6 +72,7 @@ main PROC
 	
 	CALL constructOccurPQ
 	CALL constructTree
+	CALL getAllHuffmanTreeCode
 
 	exit
 main ENDP
@@ -241,5 +255,104 @@ reSortPQ PROC
 
 	RET
 reSortPQ ENDP
+
+
+;--------------------------------------------------------------------------
+; add all huffmanTree Code in data structure called huffmanTreeCode 
+; by traverse tree by stack
+;--------------------------------------------------------------------------
+
+getAllHuffmanTreeCode PROC
+	
+	mov esi, offset huffmanTree
+	mov ecx, huffmanTreeSize
+	dec ecx
+	
+	goToLastIndexInHuffmanTree:
+		add esi, shiftOffset
+	loop goToLastIndexInHuffmanTree
+	
+	mov eax, esi
+	call writeDec
+	call crlf
+
+	mov edi, offset huffmanTreeCode
+	
+	; 0FFFFFFFFh value to check is stack is empty
+	mov eax, 0FFFFFFFFh
+	push eax
+	push eax
+	
+	; push current code and address of the root
+	mov eax,1
+	push eax
+	push esi
+	loopWhileStackNotEmp:
+		pop esi
+		pop ecx
+		; get left node 
+		mov eax, [esi + type huffmanTree]
+		; get right node
+		mov ebx, [esi + type huffmanTree * 2]
+
+
+		cmp eax,-1
+		jnz getLeftAndRightNode
+		cmp ebx,-1
+		jnz	getLeftAndRightNode
+
+			; now add code value to our ds
+			mov edx, [esi]
+			mov [edi], edx
+			mov [edi + type huffmanTreeCode], ecx
+			add edi, nextValHuffmanTreeCode
+			; now go to end of the loop 
+			mov eax,0
+			cmp eax,0
+			jz endThisNode
+
+
+
+		; if node is not null push the currnet code in stack and address 
+		getLeftAndRightNode:
+			cmp eax,-1
+			jz leftNodeIsNull
+			imul eax, TYPE huffmanTree * 3
+			shl ecx,1
+			push ecx
+			shr ecx,1
+			mov edx, offset huffmanTree
+			add edx, eax
+			push edx
+		leftNodeIsNull:
+
+
+			cmp ebx,-1
+		jz rightNodeIsNull
+			imul ebx, TYPE huffmanTree * 3
+			shl ecx,1
+			inc ecx
+			push ecx
+			shr ecx,1
+			mov edx, offset huffmanTree
+			add edx, ebx
+			push edx
+		rightNodeIsNull:
+
+
+		endThisNode:
+			pop eax
+			pop ecx
+			cmp eax,0FFFFFFFFh
+			push ecx
+			push eax
+	; now stack is empty
+	jnz loopWhileStackNotEmp
+	pop eax
+	pop ecx
+	
+	RET
+getAllHuffmanTreeCode ENDP
+
 
 END main
