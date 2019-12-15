@@ -27,15 +27,16 @@ priorityQueueSize dword 0
 ;	Value				LeftChild			RightChild
 ;--------------------------------------------------------------------------
 huffmanTree dword 2048 dup(-1)
-count10 dword 0
-count11 dword 0
-count12 dword 0
 
 ;--------------------------------------------------------------------------
 ;	The size of huffmanTree
 ;--------------------------------------------------------------------------
 huffmanTreeSize dword 0
 
+count10 dword 0
+count11 dword 0
+count12 dword 0
+levelCount Dword 0
 
 ;--------------------------------------------------------------------------
 ; string for testing
@@ -154,11 +155,13 @@ leftPos DWORD ?
 rightCh DWORD ?
 rightPos DWORD ?
 nodeCode Dword ?
-
+nodeLevel Dword ?
 count7 dword 0 ; use to cal # of levels
 count8 dword 0 ; use to cal # of levels
 count9 dword 0 ; use to cal # of levels
-levelCount Dword 0
+
+
+
 
 ;==========================================================================
 
@@ -176,6 +179,16 @@ Get_Val_From_Array PROTO    arr_Find:PTR DWORd   , type_Array : DWORD , val_Pos:
 Set_Type_Node PROTO   leftChild : DWORD , rightChild:DWORD  
 Decompression_String PROTO decompressionString:PTR Byte , compressionString :PTR Byte , lengthOfCompressionString :DWORD 
 Shift_Left_ArrCode_Node PROTO arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR DWord , lengthOfArr : Dword 
+sortArray PROTO offsetOfArray : PTR DWord , sizeOfArray : Dword , PQ : Byte
+
+set_Leveel_Code PROTO  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , typeOfArrLevel : Dword , offsetOfArrCode_Node : PTR Dword , typeOfArrCode_Node : Dword
+
+
+;set_Leveel_Code PROC  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , typeOfArrLevel : Dword , offsetOfArrCode_Node : PTR Dword , typeOfArrCode_Node : Dword
+
+;set_Leveel_Code PROTO  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , offsetOfArrCode_Node : PTR Dword
+;offsetOfPQ : PTR Dword , typeOfPQ :  Dword , offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , offsetOfArrCode_Node : PTR Dword
+
 ;""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 ;********************************************************
@@ -200,6 +213,13 @@ Qp dword 0
 main PROC
 
 
+	comment (
+	mov edx , 0
+	mov eax , 10
+	mov ebx , 2
+	div ebx
+	call writedec
+	(
 
 
 		CALL constructOccurPQ
@@ -207,6 +227,9 @@ main PROC
 	
 	CALL constructTree
 	
+	INVOKE set_Leveel_Code ,  offset huffmanTree , type huffmanTree , huffmanTreeSize , offset arrLevelOfNode   , type arrLevelOfNode  , offset arrCode_Node  , type arrCode_Node 
+
+	;comment &
 	mov ecx , priorityQueueSize
 	mov edx , offset priorityQueue
 
@@ -267,23 +290,26 @@ main PROC
 	;	pop  ecx 
 	loop ll
 
-
+	;&
 	;comment $
 
 
 
 
-	call readDecompressionFile
-	call FillData
-		INVOKE Shift_Left_ArrCode_Node , offset arrCode_Node  , offset arrLevelOfNode , nodeCount 
-	mov ecx , nodeCount 
+	;call readDecompressionFile
+	;call FillData
+	;mov ecx , nodeCount 
 
+	mov edx , offset huffmanTree
+	mov ecx , huffmanTreeSize
 	inc ecx
 	hh:
-
-	INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , tt
-	call writedec
-	call crlf
+	mov eax , [edx]
+	call  writedec
+	add edx , 12
+	;INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , tt
+	;call writedec
+	;call crlf
 	;INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos  ,type arrOfNodesPos    , tt
 	;call writedec
 	;call crlf
@@ -322,8 +348,8 @@ main ENDP
 ;--------------------------------------------------------------------------
 constructOccurPQ PROC
 	
-	mov ecx, lengthof inputString
-	mov esi, offset inputString
+	mov ecx, lengthof inputString2
+	mov esi, offset inputString2
 	mov edi, offset priorityQueue
 
 	loopOverInputSting:
@@ -364,7 +390,9 @@ constructOccurPQ PROC
 	mov edi, offset huffmanTree
 	fillHuffmanTreeLeaves:
 		
-		mov eax, [esi + type priorityQueue]
+		;mov eax, [esi + type priorityQueue]
+		mov eax, [esi ]
+		
 		mov [edi], eax
 
 		mov eax, huffmanTreeSize
@@ -384,7 +412,8 @@ constructOccurPQ ENDP
 ;--------------------------------------------------------------------------
 constructTree PROC uses ecx
 	
-	CALL sortPQ
+	;CALL sortPQ
+	INVOKE sortArray , OFFSET priorityQueue , priorityQueueSize , 1
 	
 
 	comment #
@@ -526,6 +555,68 @@ constructTree PROC uses ecx
 		cmp count11, 1
 		jnz pqSizeNotOne
 
+		
+	mov ecx , huffmanTreeSize			;test
+	mov edx , offset huffmanTree
+	llq:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writechar
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop llq
+
+
+	INVOKE sortArray , OFFSET huffmanTree , huffmanTreeSize , 0
+
+
+	
+	mov ecx , huffmanTreeSize				;test
+	mov edx , offset huffmanTree
+	llqq:
+	;	push ecx
+	;	mov ecx , 3
+	;		oo:
+				mov eax , [edx]
+				call writechar
+				call writedec
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				mov eax , [edx]
+				call writeint
+				call crlf
+				add  edx , 4
+
+				call crlf
+	;		loop oo
+	;	pop  ecx 
+	loop llqq
+
+
+
 		RET
 constructTree ENDP
 
@@ -534,16 +625,18 @@ constructTree ENDP
 ; sorts prioirityQueue Array
 ; uses priorityQueueSize
 ;--------------------------------------------------------------------------
-sortPQ PROC
+;sortPQ PROC offsetOfArray : PTR Word , sizeOfArray : Dword
+sortArray PROC offsetOfArray : PTR DWord , sizeOfArray : Dword , PQ : byte
+
 	
-	mov esi, offset priorityQueue
-	mov ecx, priorityQueueSize
+	mov esi,offsetOfArray
+	mov ecx, sizeOfArray
 	
 	oLoop:
 
 		push ecx 
 
-		mov ecx, priorityQueueSize
+		mov ecx, sizeOfArray
 		dec ecx
 
 		iLoop:
@@ -566,10 +659,11 @@ sortPQ PROC
 				;call writechar
 				;call writeint
 				;call crlf
-
+				cmp PQ , 1
+				je _continue
 			mov eax , [esi + type priorityQueue  * 2]
-			;xchg eax, [esi + type priorityQueue * 5]
-			;mov[esi + type priorityQueue * 2], eax
+			xchg eax, [esi + type priorityQueue * 5]
+			mov[esi + type priorityQueue * 2], eax
 
 				;call writeint
 				;call crlf
@@ -579,7 +673,7 @@ sortPQ PROC
 			add esi, shiftOffset
 		loop iLoop
 
-		mov esi, offset priorityQueue
+		mov esi, offsetOfArray
 		pop ecx
 	loop oLoop
 
@@ -614,7 +708,7 @@ sortPQ PROC
 	%
 
 	RET
-sortPQ ENDP
+sortArray ENDP
 
 
 ;--------------------------------------------------------------------------
@@ -666,8 +760,8 @@ reSortPQ PROC uses edx edi
 
 	inc priorityQueueSize
 	inc huffmanTreeSize
-	call sortPQ
-
+	;call sortPQ
+	INVOKE sortArray , OFFSET priorityQueue , priorityQueueSize , 1
 		
 	
 
@@ -678,7 +772,114 @@ reSortPQ PROC uses edx edi
 	RET
 reSortPQ ENDP
 
+;--------------------------------------------------------------------------
 
+;huffmanTreeSize
+;levelCount
+;offsetOfPQ : PTR Dword , typeOfPQ :  Dword ,
+;comment #
+set_Leveel_Code PROC  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , typeOfArrLevel : Dword , offsetOfArrCode_Node : PTR Dword , typeOfArrCode_Node : Dword
+
+	mov esi , offsetOfTree
+	mov ecx , sizeOfTree
+	mov eax , ecx
+	dec eax
+	INVOKE Save_Val_IN_Array , offsetOfArrCode_Node  , typeOfArrCode_Node , eax , 0
+	INVOKE Save_Val_IN_Array , offsetOfArrLevelOfNode , typeOfArrLevel , eax , 0
+
+
+	
+	L_L:
+		dec ecx
+
+		mov edx , 0
+		mov eax , 12
+		mul ecx
+		mov edi , eax
+		INVOKE Get_Val_From_Array , offset arrLevelOfNode , type arrLevelOfNode  , ecx
+		mov nodeLevel , eax 
+		inc nodeLevel
+		;inc eax
+		mov eax , [esi +edi + 4]
+		cmp eax  , -1
+		je skip_L_L
+		INVOKE Save_Val_IN_Array , offsetOfArrLevelOfNode ,typeOfArrLevel  , [esi +edi + 4] , nodeLevel		; set level left Node
+		INVOKE Save_Val_IN_Array , offsetOfArrLevelOfNode , typeOfArrLevel  , [esi + edi + 8]  , nodeLevel		; set level left Node
+
+		skip_L_L:
+			inc ecx
+	LOOP L_L
+
+	mov esi , offset huffmanTree
+	mov ecx , sizeOfTree
+	L_C :
+			dec ecx
+			mov edx , 0
+			mov eax , 12
+			mul ecx
+			mov edi , eax
+
+			INVOKE Get_Val_From_Array , offsetOfArrCode_Node   , typeOfArrCode_Node , ecx
+			mov nodeCode , eax
+			shl nodeCode , 1
+			shl eax , 1
+			mov ebx , [esi+edi]
+			mov ebx , [esi +edi + 4]
+			cmp ebx  , -1
+			je skip_L_C
+
+			INVOKE Save_Val_IN_Array , offsetOfArrCode_Node  , typeOfArrCode_Node , [esi +edi + 4] , nodeCode		; set level left Node
+			or al , 00000001b
+			mov nodeCode , eax
+			INVOKE Save_Val_IN_Array , offsetOfArrCode_Node  , typeOfArrCode_Node , [esi + edi + 8]  , nodeCode		; set level left Node
+			skip_L_C:
+			;add esi , 12
+			inc ecx
+	LOOP L_C 
+
+	comment )
+
+	mov ebx , 0
+	mov edi , sizeOfTree
+	dec edi
+	mov esi , OFFSET arrLevelOfNode
+	mov edx , 0
+	mov eax , edi
+	mov ecx , 2
+	div ecx
+	mov ecx , eax
+	L_X_C:
+		mov eax , [esi + edi  * 4]
+		xchg eax, [esi + ebx * 4]
+		mov[esi + edi * 4], eax
+		dec edi
+		inc ebx
+	Loop L_X_C
+	)
+	mov ecx , sizeOfTree
+	dec ecx
+	INVOKE Shift_Left_ArrCode_Node , offset arrCode_Node  , offset arrLevelOfNode ,ecx 
+	
+	comment -
+	mov ecx , sizeOfTree		; test
+	mov tt , 0
+	l3:
+	INVOKE Get_Val_From_Array , OFFSET arrLevelOfNode  ,type arrLevelOfNode    , tt
+	call writedec
+	call crlf
+	INVOKE Get_Val_From_Array , offset arrCode_Node  ,type arrCode_Node    , tt
+	call writedec
+	call crlf
+	call crlf
+	call crlf
+	inc tt
+	loop l3
+	-
+
+	RET
+set_Leveel_Code ENDP
+;#
+;--------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------
 ; TODO write disc
@@ -1031,7 +1232,8 @@ FillData PROC
 	
 
 	end_FillData:
-	RET
+		INVOKE Shift_Left_ArrCode_Node , offset arrCode_Node  , offset arrLevelOfNode , nodeCount 
+		RET
 fillData ENDP
 
 ;------------------------------------------------------
@@ -1478,7 +1680,7 @@ Decompression_String ENDP
 
 ;-----------------------------------------------
 
-Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR DWord , lengthOfArr : Dword 
+Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR DWord , lengthOfArr : Dword
 	push eax
 	push ebx
 	push ecx
@@ -1488,8 +1690,15 @@ Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR 
 	mov edx , arrayCodeNode
 	mov ebx , arrayLevelOfNode
 	call crlf
-	add edx , 4
-	add ebx , 4
+;	cmp flag , 1 
+;	je skip_1
+
+;	add edx , 4
+;	add ebx , 4
+;	jmp skip_2
+;	skip_1 :
+;	dec ecx
+;	skip_2:
 	mov tt, 1 ;test
 	;add ecx , 2
 	Lo:
@@ -1506,6 +1715,8 @@ Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR 
 		call crlf
 		mov esi , [edx]
 		;inc ecx
+		cmp ecx , 0
+		je skip
 		LLO:
 			RCR esi , 1
 			call dumpRegs
@@ -1519,6 +1730,7 @@ Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR 
 				call writechar
 			*
 		loop LLO
+		skip:
 		call crlf
 		mWrite <"////////////////////////////////////////////",0dh,0ah>	
 		
