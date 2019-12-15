@@ -35,7 +35,7 @@ huffmanTreeSize dword 0
 ;--------------------------------------------------------------------------
 ; string for testing
 ;--------------------------------------------------------------------------
-inputString byte "howaree";
+inputString byte "aaaaabbbbbbbbbccccccccccccdddddddddddddeeeeeeeeeeeeeeeefffffffffffffffffffffffffffffffffffffffffffff";
 
 
 ;--------------------------------------------------------------------------
@@ -272,10 +272,6 @@ getAllHuffmanTreeCode PROC
 		add esi, shiftOffset
 	loop goToLastIndexInHuffmanTree
 	
-	mov eax, esi
-	call writeDec
-	call crlf
-
 	mov edi, offset huffmanTreeCode
 	
 	; 0FFFFFFFFh value to check is stack is empty
@@ -287,7 +283,7 @@ getAllHuffmanTreeCode PROC
 	mov eax,1
 	push eax
 	push esi
-	loopWhileStackNotEmp:
+	loopWhileStackNotEmpty:
 		pop esi
 		pop ecx
 		; get left node 
@@ -298,18 +294,13 @@ getAllHuffmanTreeCode PROC
 
 		cmp eax,-1
 		jnz getLeftAndRightNode
-		cmp ebx,-1
-		jnz	getLeftAndRightNode
 
 			; now add code value to our ds
 			mov edx, [esi]
 			mov [edi], edx
 			mov [edi + type huffmanTreeCode], ecx
 			add edi, nextValHuffmanTreeCode
-			; now go to end of the loop 
-			mov eax,0
-			cmp eax,0
-			jz endThisNode
+			jmp endThisNode
 
 
 
@@ -347,7 +338,7 @@ getAllHuffmanTreeCode PROC
 			push ecx
 			push eax
 	; now stack is empty
-	jnz loopWhileStackNotEmp
+	jnz loopWhileStackNotEmpty
 	pop eax
 	pop ecx
 	
