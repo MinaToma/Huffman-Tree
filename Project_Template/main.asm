@@ -8,15 +8,16 @@ INCLUDE macros.inc
 ; Random purpose variables
 ;--------------------------------------------------------------------------
 inputString byte 1000 dup(0)							;input string
-inputStringSize dword 0									;ipnut string size
+inputStringSize dword 0									  ;ipnut string size
 outputString byte 1000 dup(0)							;output string
-outputStringSize dword 0								;output string size
-outputStringCharacter byte 1000 dup(0)					;output string for characters
-outputStringCharacterSize dword 0						;output string for characters size
-newLineChar db 0Dh, 0Ah									;Variable for newLineChar
-newLineCharLength dword 2								;Length of newLineChar
-shiftOffset dword 12									;shift to get next Node
-maxValue dword 1000000000								;Max Value
+outputStringSize dword 0							    ;output string size
+outputStringCharacter byte 1000 dup(0)		;output string for characters
+outputStringCharacterSize dword 0					;output string for characters size
+newLineChar db 0Dh, 0Ah								  	;Variable for newLineChar
+newLineCharLength dword 2							  	;Length of newLineChar
+shiftOffset dword 12					  			  	;shift to get next Node
+nextValHuffmanTreeCode dword 8            ;Go to next code at huffmanTreeCode
+maxValue dword 1000000000							  	;Max Value
 
 
 ;--------------------------------------------------------------------------
@@ -68,6 +69,14 @@ bfsArrayHead dword 0									;Pointer of bfsArray head
 bfsArrayTail dword 0									;Pointer of bfsArray tail
 
 
+;--------------------------------------------------------------------------
+; This data structure to hold huffman tree code  
+;	Data will be like
+;	FirstDword			SecondDword
+;	Key					binaryCode
+;--------------------------------------------------------------------------
+huffmanTreeCode dword 2048 dup(-1)
+
 
 ;==========================================================================
 ;==========================================================================
@@ -82,6 +91,8 @@ main PROC
 	CALL constructTree
 	CALL bfsTraversal
 	CALL Write_File
+	CALL getAllHuffmanTreeCode
+
 
 	exit
 main ENDP
@@ -515,5 +526,104 @@ numberToStringToOutputString PROC uses ebx ecx esi edx ecx
 
 	ret
 numberToStringToOutputString ENDP
+
+
+;--------------------------------------------------------------------------
+; add all huffmanTree Code in data structure called huffmanTreeCode 
+; by traverse tree by stack
+;--------------------------------------------------------------------------
+
+getAllHuffmanTreeCode PROC
+	
+	mov esi, offset huffmanTree
+	mov ecx, huffmanTreeSize
+	dec ecx
+	
+	goToLastIndexInHuffmanTree:
+		add esi, shiftOffset
+	loop goToLastIndexInHuffmanTree
+	
+	mov eax, esi
+	call writeDec
+	call crlf
+
+	mov edi, offset huffmanTreeCode
+	
+	; 0FFFFFFFFh value to check is stack is empty
+	mov eax, 0FFFFFFFFh
+	push eax
+	push eax
+	
+	; push current code and address of the root
+	mov eax,1
+	push eax
+	push esi
+	loopWhileStackNotEmp:
+		pop esi
+		pop ecx
+		; get left node 
+		mov eax, [esi + type huffmanTree]
+		; get right node
+		mov ebx, [esi + type huffmanTree * 2]
+
+
+		cmp eax,-1
+		jnz getLeftAndRightNode
+		cmp ebx,-1
+		jnz	getLeftAndRightNode
+
+			; now add code value to our ds
+			mov edx, [esi]
+			mov [edi], edx
+			mov [edi + type huffmanTreeCode], ecx
+			add edi, nextValHuffmanTreeCode
+			; now go to end of the loop 
+			mov eax,0
+			cmp eax,0
+			jz endThisNode
+
+
+
+		; if node is not null push the currnet code in stack and address 
+		getLeftAndRightNode:
+			cmp eax,-1
+			jz leftNodeIsNull
+			imul eax, TYPE huffmanTree * 3
+			shl ecx,1
+			push ecx
+			shr ecx,1
+			mov edx, offset huffmanTree
+			add edx, eax
+			push edx
+		leftNodeIsNull:
+
+
+			cmp ebx,-1
+		jz rightNodeIsNull
+			imul ebx, TYPE huffmanTree * 3
+			shl ecx,1
+			inc ecx
+			push ecx
+			shr ecx,1
+			mov edx, offset huffmanTree
+			add edx, ebx
+			push edx
+		rightNodeIsNull:
+
+
+		endThisNode:
+			pop eax
+			pop ecx
+			cmp eax,0FFFFFFFFh
+			push ecx
+			push eax
+	; now stack is empty
+	jnz loopWhileStackNotEmp
+	pop eax
+	pop ecx
+	
+	RET
+getAllHuffmanTreeCode ENDP
+
 
 END main
