@@ -129,10 +129,13 @@ arrOfAlphabe DWORD 2000 dup(-1)
 arrOfNodesPos DWORD 2000 dup(-1)
 arrOfLeftChildren DWORD 2000 dup(-1)
 arrOfRightChildren DWORD 2000 dup(-1)
-arrTypeOfNode Dword 2000 dup(-2)	
+arrTypeOfNode Dword 2000 dup(-2)
+
 arrCode_Node Dword 2000 dup(00000000000000000000000000000000b)
 arrLevelOfNode Dword 2000 dup(-2)	
-
+arrNumberOfNodesInLevel dword 2000 dup(0)
+sizeArrNumberOfNodesInLevel dword 0
+countNodeInLevel dword 1
 
 count dword  0 ;for nodes array
 count2 dword 0 ;for tree array
@@ -168,6 +171,8 @@ count9 dword 0 ; use to cal # of levels
 lengthOfDecompressionString Dword 0
 
 ;==========================================================================
+treeString byte 50000 dup(?)
+alphabeString byte 50000 dup(?)
 ;==========================================================================
 
 
@@ -180,8 +185,8 @@ Set_Type_Node PROTO   leftChild : DWORD , rightChild:DWORD
 Decompression_String PROTO decompressionString:PTR Byte , compressionString :PTR Byte , lengthOfCompressionString :DWORD 
 Shift_Left_ArrCode_Node PROTO arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR DWord , lengthOfArr : Dword 
 sortArray PROTO offsetOfArray : PTR DWord , sizeOfArray : Dword , PQ : Byte
-
 set_Leveel_Code PROTO  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , typeOfArrLevel : Dword , offsetOfArrCode_Node : PTR Dword , typeOfArrCode_Node : Dword
+calculateNumberOfNodesInLevel PROTO sizeOfArrLevelOfNode : Dword
 
 
 ;set_Leveel_Code PROC  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree : Dword , offsetOfArrLevelOfNode : PTR Dword , typeOfArrLevel : Dword , offsetOfArrCode_Node : PTR Dword , typeOfArrCode_Node : Dword
@@ -211,6 +216,10 @@ Qp dword 0
 ;****************************************************
 .code
 main PROC
+
+
+	mov ebx , 5
+;	mov  bl , ptr byte ebx
 
 
 	comment (
@@ -810,6 +819,9 @@ set_Leveel_Code PROC  offsetOfTree : PTR Dword , typeOfTree : Dword , sizeOfTree
 			inc ecx
 	LOOP L_L
 
+
+	INVOKE calculateNumberOfNodesInLevel , sizeOfTree
+
 	mov esi , offset huffmanTree
 	mov ecx , sizeOfTree
 	L_C :
@@ -1009,7 +1021,57 @@ Save_Data_IN_File PROC
 		RET
 Save_Data_IN_File ENDP
 ;-----------------------------------------------------------------------------
+comment &
+Set_Header_File PROC
 
+	mov count7 , 0
+	;mov edx , 0
+	;mov eax , 12
+	;mul huffmanTreeSize
+	;sub eax , 12
+	
+	;mov eax , huffmanTreeSize
+	;dec eax		;eax==> 0 base index 
+	mov edi , offset treeString 
+	mov esi , offset arrNumberOfNodesInLevel 
+	mov ecx , sizeArrNumberOfNodesInLevel
+
+	mov edx , offset huffmanTree
+	;offset left  edx + 4
+	;offset right edx+8
+	; type = shiftOffset
+
+	;INVOKE Save_Val_IN_Array , OFFSET arrOfAlphabe  , type arrOfAlphabe  , count5 , ebx
+	;INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count5
+
+		mov eax , huffmanTreeSize
+		dec eax	
+		INVOKE Get_Val_From_Array , edx  , shiftOffset , eax
+		INVOKE Save_Val_IN_Array , OFFSET tree   , type tree   , 0 , eax
+	L_L:
+		push ecx
+		mov ebx , sizeArrNumberOfNodesInLevel
+		sub ebx , ecx
+		mov ecx , [esi + ebx ]
+		mov levelSize , ecx
+	
+
+			
+
+		L_N_L:
+			
+
+				
+			;inc count7
+		LOOP L_N_L
+		add edi , levelSize * 4
+
+		pop ecx
+	LOOP L_L
+
+RET
+Set_Header_File ENDP
+&
 ;--------------------------------------------------------------------------
 ; TODO write disc
 ;--------------------------------------------------------------------------
@@ -1340,7 +1402,9 @@ Get_Child PROC  uses edx ecx
 		INVOKE Save_Val_IN_Array , OFFSET arrOfNumberOfRepeated , type arrOfNumberOfRepeated , esi , rightCh 
 		;INVOKE Get_Val_From_Array , OFFSET arrOfNumberOfRepeated ,type arrOfNumberOfRepeated   , count4							;for test
 
-		INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , esi , rightPos 
+	
+	
+	INVOKE Save_Val_IN_Array , OFFSET arrOfNodesPos   , type arrOfNodesPos  , esi , rightPos 
 		;INVOKE Get_Val_From_Array , OFFSET arrOfNodesPos ,type arrOfNodesPos   , count4											;for test
 	
 		INVOKE Get_Val_From_Array , OFFSET arrCode_Node  ,type arrCode_Node    , count3
@@ -1557,7 +1621,7 @@ Get_Node_Position ENDP
 ;---------------------------------------------------------
 Set_Type_Node PROC   leftChild : DWORD , rightChild:DWORD  
 
-
+	
 	
 	push eax  
 	push edi
@@ -1677,7 +1741,18 @@ Decompression_String ENDP
 				RET
 	Set_Decompression_String ENDP
 ;---------------------------------------------
+comment $
+Compression_String PROC offsetOfDecompressionString : PTR byte , sizeOfDecompressionString : Dword , offsetOfArrCode : PTR Dword , offsetOfArrLevel : PTR Dword , treeSize : Dword
+		mov ecx , sizeOfDecompressionString
+		L_CH:
+			
 
+
+		LOOP L_CH
+
+RET
+Compression_String ENDP
+$
 ;-----------------------------------------------
 
 Shift_Left_ArrCode_Node PROC arrayCodeNode : PTR Dword , arrayLevelOfNode : PTR DWord , lengthOfArr : Dword
@@ -1752,6 +1827,47 @@ Shift_Left_ArrCode_Node ENDP
 
 ;-----------------------------------------------
 
+calculateNumberOfNodesInLevel PROC sizeOfArrLevelOfNode : Dword
+	push esi 
+	push edx
+	push ecx
+	push eax
+
+
+	mov esi , offset arrNumberOfNodesInLevel 
+	mov edx , offset arrLevelOfNode 
+	mov ecx , sizeOfArrLevelOfNode
+	
+	l:
+		dec ecx
+		mov eax , [edx + ecx * type arrLevelOfNode   ]
+		cmp eax , [edx + ecx * type arrLevelOfNode  - type arrLevelOfNode ]
+		je _equal
+		mov edi , sizeArrNumberOfNodesInLevel 
+		mov eax , countNodeInLevel
+		mov [esi + edi * type arrNumberOfNodesInLevel ] , eax
+		call writedec
+		call crlf
+		mov countNodeInLevel , 1
+		mov eax , sizeArrNumberOfNodesInLevel
+		inc sizeArrNumberOfNodesInLevel
+		call writedec
+		call crlf
+		call crlf
+		jmp end_Loop
+		_equal :
+		inc countNodeInLevel 
+		end_Loop:
+		inc ecx
+	LOOP l
+
+	pop eax
+	pop ecx 
+	pop edx
+	pop esi 
+
+RET
+calculateNumberOfNodesInLevel ENDP
 
 
 
