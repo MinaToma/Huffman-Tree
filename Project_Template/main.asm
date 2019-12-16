@@ -18,9 +18,9 @@ newLineCharLength dword 2							  	;Length of newLineChar
 shiftOffset dword 12					  			  	;shift to get next Node
 nextValHuffmanTreeCode dword 8							;Go to next code at huffmanTreeCode
 maxValue dword 1000000000							  	;Max Value
-compressedOutputString byte 10000 dup(0)				;the result of huffmanTree code
+compressedOutputString byte 1000 dup(0)					;the result of huffmanTree code
 compressedOutputStringSize dword 0						;size of result of huffmanTree code
-decompressedOutputString byte 10000 dup(0)				;the result of decompressed huffman tree
+decompressedOutputString byte 1000 dup(0)				;the result of decompressed huffman tree
 decompressedOutputStringSize dword 0					; size of result of decompressed huffman tree
 
 
@@ -29,17 +29,19 @@ decompressedOutputStringSize dword 0					; size of result of decompressed huffma
 ;--------------------------------------------------------------------------
 bufferSize DWORD  1000d 
 buffer BYTE 1000 DUP(?)
-inputFileName BYTE "C:\Huffman-Tree\Project_Template\Debug\input.txt",0
+inputFileNameStringInput BYTE "C:\Huffman-Tree\Project_Template\Debug\stringInput.txt",0
+inputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Project_Template\Debug\huffmanTree.txt",0
+inputFileNameCompressedString BYTE "C:\Huffman-Tree\Project_Template\Debug\compressedCode.txt",0
 inputFileHandle HANDLE ?
 
 
 ;--------------------------------------------------------------------------
 ; Variables for wrting to file
 ;--------------------------------------------------------------------------
-outputFileName BYTE "C:\Huffman-Tree\Project_Template\Debug\output.txt", 0
+outputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Project_Template\Debug\huffmanTree.txt", 0
+outputFileNameCompressedCode BYTE "C:\Huffman-Tree\Project_Template\Debug\compressedCode.txt", 0
 outputFileHandle HANDLE ?
 stringLength DWORD ?
-bytesWritten DWORD ?
 cannotCreateFileError BYTE "Cannot create file", 0dh, 0ah, 0
 
 
@@ -62,6 +64,7 @@ characterCount dword 0									;Number of Characters
 ;	Value				LeftChild			RightChild
 ;--------------------------------------------------------------------------
 huffmanTree dword 2048 dup(-1)
+huffmanTreeHead dword 0									;Pointer to head of huffman tree
 huffmanTreeSize dword 0									;The size of huffmanTree
 
 
@@ -90,68 +93,21 @@ huffmanTreeCode dword 2048 dup(-1)
 .code
 main PROC
 	
-	;CALL compress
-	CALL decompress
+	CALL compress
+	;CALL decompress
 	
 	exit
 main ENDP
 
-; ------------------------------------------------------------------------------------------------------------
-; Reset All variables
-; ------------------------------------------------------------------------------------------------------------
-init PROC
-	
-	mov inputStringSize, 0
-	mov outputStringSize, 0
-	mov outputStringCharacterSize, 0
-	mov priorityQueueSize, 0
-	mov characterCount, 0
-	mov huffmanTreeSize, 0
-	mov bfsArrayHead, 0
-	mov bfsArrayTail, 0
 
-	ret
-init ENDP
-
-
-; ------------------------------------------------------------------------------------------------------------
-; Compression Function
-; ------------------------------------------------------------------------------------------------------------
-compress PROC
-		
-	CALL init
-	CALL Read_File
-	CALL constructOccurPQ
-	CALL constructTree
-	CALL bfsTraversal
-	CALL Write_File
-	CALL getAllHuffmanTreeCode
-
-	ret
-compress ENDP
-
-
-; ------------------------------------------------------------------------------------------------------------
-; Decompression
-; ------------------------------------------------------------------------------------------------------------
-decompress PROC
-
-	CALL init	
-	CALL Read_File
-	CALL constuctTreeDecompression
-
-	ret
-decompress ENDP
-
-
-; ------------------------------------------------------------------------------------------------------------
+;------------------------------------------------------------------------------------------------------------
 ; Proc for reading Huffman file 
 ; Takse name of file and buffer to read on it
 ; Reutrns buff => data of file 
 ; ------------------------------------------------------------------------------------------------------------
-Read_File proc 
+Read_File proc, stringToInputOffset:ptr dword, stringToInputSizeOffset:ptr dword, inputFileOffset:ptr dword
 
-	mov edx, OFFSET inputFileName
+	mov edx, inputFileOffset
 
 	call OpenInputFile
 	mov inputFileHandle, eax
@@ -182,9 +138,10 @@ Read_File proc
 
 	buf_size_ok:
 	mov esi, offset buffer
-	mov edi, offset inputString
+	mov edi, stringToInputOffset
 	mov ecx, eax
-	mov inputStringSize, eax
+	mov ebx, stringToInputSizeOffset
+	mov [ebx], eax
 	rep movsb
 
 	close_file:
@@ -201,9 +158,9 @@ Read_File Endp
 ; Takes handle of file and buffer to read on it
 ; Reutrns new updated file after writing
 ; ------------------------------------------------------------------------------------------------------------
-Write_File proc
+Write_File proc, stringToOutputOffset:ptr dword, stringToOutputSize:dword, outputFileNameHuffmanTreeOffset:ptr dword
 
-	mov edx, OFFSET outputFileName ; Create a new text file.
+	mov edx, outputFileNameHuffmanTreeOffset ; Create a new text file.
 	call CreateOutputFile
 	mov outputFileHandle, eax
 
@@ -216,12 +173,12 @@ Write_File proc
 
 	file_ok:
 
-	mov esi, offset outputString
+	mov esi, stringToOutputOffset
 	mov edi, offset buffer
-	mov ecx, outputStringSize
+	mov ecx, stringToOutputSize
 	rep movsb
 
-	mov eax, outputStringSize
+	mov eax, stringToOutputSize
 	mov stringLength, eax ; counts chars entered
  
 	mov eax, outputFileHandle ;Write the buffer to the output file.
@@ -229,22 +186,66 @@ Write_File proc
 	mov ecx, stringLength
 	call WriteToFile
 
-	mov eax, outputFileHandle ;Write the buffer to the output file.
-	mov edx, OFFSET newLineChar
-	mov ecx, newLineCharLength
-	call WriteToFile
-
-	mov eax, outputFileHandle ;Write the buffer to the output file.
-	mov edx, OFFSET outputStringCharacter
-	mov ecx, outputStringCharacterSize
-	call WriteToFile
-
 	call CloseFile
-
 	quit:
 
     ret
 Write_File ENDP
+
+
+; ------------------------------------------------------------------------------------------------------------
+; Reset All variables
+; ------------------------------------------------------------------------------------------------------------
+init PROC
+	
+	mov inputStringSize, 0
+	mov outputStringSize, 0
+	mov outputStringCharacterSize, 0
+	mov priorityQueueSize, 0
+	mov characterCount, 0
+	mov huffmanTreeSize, 0
+	mov bfsArrayHead, 0
+	mov bfsArrayTail, 0
+
+	ret
+init ENDP
+
+
+; ------------------------------------------------------------------------------------------------------------
+; Compression Function
+; ------------------------------------------------------------------------------------------------------------
+compress PROC
+		
+	CALL init
+	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameStringInput
+	CALL constructOccurPQ
+	CALL constructTree
+	CALL bfsTraversal
+	INVOKE Write_File, offset outputString, outputStringSize, offset outputFileNameHuffmanTree
+	CALL getAllHuffmanTreeCode
+	CALL getCompressedOutputString
+	INVOKE Write_File, offset compressedOutputString, compressedOutputStringSize, offset outputFileNameCompressedCode
+
+	ret
+compress ENDP
+
+
+; ------------------------------------------------------------------------------------------------------------
+; Decompression
+; ------------------------------------------------------------------------------------------------------------
+decompress PROC
+
+	CALL init	
+	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameHuffmanTree
+	CALL constuctTreeDecompression
+	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameCompressedString
+	CALL getAllHuffmanTreeCode
+	CALL getDecompressedOutputString
+	mov edx, offset decompressedOutputString
+	INVOKE Write_File, offset decompressedOutputString, decompressedOutputStringSize, offset outputFileNameCompressedCode
+
+	ret
+decompress ENDP
 
 
 ;--------------------------------------------------------------------------
@@ -446,7 +447,6 @@ sortPQ ENDP
 bfsTraversal PROC
 	
 	mov esi, offset huffmanTree
-	
 	mov edi, offset bfsArray
 	mov eax, huffmanTreeSize
 	dec eax
@@ -537,6 +537,18 @@ bfsTraversal PROC
 		cmp bfsArrayHead, eax
 		jnz bfsLoop
 
+	mov edi, offset outputString
+	add edi, outputStringSize
+	mov esi, offset newLineChar
+	mov ecx, newLineCharLength
+	add outputStringSize, ecx
+	rep movsb
+
+	mov esi, offset outputStringCharacter
+	mov ecx, outputStringCharacterSize
+	add outputStringSize, ecx
+	rep movsb
+
 	ret
 bfsTraversal ENDP
 
@@ -575,10 +587,9 @@ numberToStringToOutputString ENDP
 
 
 ;--------------------------------------------------------------------------
-; add all huffmanTree Code in data structure called huffmanTreeCode 
-; by traverse tree by stack
+; Add all huffmanTree Code in a data structure called huffmanTreeCode 
+; by traversing tree by stack
 ;--------------------------------------------------------------------------
-
 getAllHuffmanTreeCode PROC
 	
 	mov esi, offset huffmanTree
@@ -658,20 +669,17 @@ getAllHuffmanTreeCode PROC
 getAllHuffmanTreeCode ENDP
 
 
+;--------------------------------------------------------------------------
+; Constructs Huffman tree from given input tree
+;--------------------------------------------------------------------------
 constuctTreeDecompression PROC
 	
-	mov edx, offset inputString
-	call writestring
-	call crlf
-
 	mov esi, offset inputString
 	mov ecx, inputStringSize
 	mov edi, offset characterArray
 	getCharacters:
 		mov eax, 0
-		mov eax, [esi + ecx - 1]
-		call writechar
-		call crlf
+		mov al, [esi + ecx - 1]
 		cmp al, ' '
 		
 		jz skipChar
@@ -679,47 +687,129 @@ constuctTreeDecompression PROC
 		jz endOfLine
 
 		mov ebx, characterCount
-		imul ebx, TYPE characterArray
+		imul ebx, TYPE characterArray * 3
 		mov [edi + ebx + TYPE characterArray], eax
 		inc characterCount
-
+		
 		skipChar:
 	loop getCharacters
 
 	endOfLine:
 	sub ecx, 2
 
+	mov eax, 0FFFFFFFFh
+	push eax
+	push eax
+
 	mov ebx, 0
-	mov edx, 0
+	mov edi, offset huffmanTree
 	getTreeNodes:
-		mov eax, [esi + edx]
+		mov eax, [esi]
 		cmp al, ' '
 		jz insertNodeValue
 		imul ebx, 10
 		and al, 11001111b
-		push edx
 		movzx edx, al
 		mov eax, edx
-		pop edx
 		add ebx, eax
 		jmp skipInsertNode
 
 		insertNodeValue:
 		mov eax, ebx
-		call writedec
-		call crlf
+		mov ebx, huffmanTreeSize
+		mov edx, huffmanTreeSize
+		cmp edx, 0
+		jz skipRoot
+		push ebx
+		skipRoot:
+		imul ebx, TYPE huffmanTree * 3
+		mov [edi + ebx], eax
+		inc huffmanTreeSize
+		mov ebx, 0
+
+		pop ebx
+		pop eax
+		jmp skipShortcut
+
+	getTreeNodesShortcut:
+		jmp getTreeNodes
+	skipShortcut:
+
+		cmp eax, 0FFFFFFFFh
+		jnz insertCurrentLeftRight
+		push eax
+		push ebx
+		jmp makeCurNumberZero
+
+		insertCurrentLeftRight:
+		push eax
+		skipZeroNodesAtHead:
+			mov edx, huffmanTreeHead
+			imul edx, TYPE huffmanTree * 3
+			mov eax, [edi + edx]
+			cmp eax, 0
+			jnz noMoreZeroNodesAtHead
+			inc huffmanTreeHead
+			jmp skipZeroNodesAtHead
+
+		noMoreZeroNodesAtHead:
+		pop eax
+		push ebx
+		push eax
+		mov ebx, 0
+		imul eax, TYPE huffmanTree * 3
+		cmp [edi + eax], ebx
+		pop eax
+		pop ebx
+		jz noChildrenGetCharValue
+			
+		mov [edi + edx + TYPE huffmanTree], eax
+		mov [edi + edx + TYPE huffmanTree * 2], ebx
+		inc huffmanTreeHead
+		
+		jmp makeCurNumberZero
+		noChildrenGetCharValue:
+
+		mov eax, characterCount
+		dec eax
+		imul eax, TYPE characterArray * 3
+		mov edx, huffmanTreeHead
+		imul edx, TYPE huffmanTree * 3
+		push esi
+		mov esi, offset characterArray
+		mov ebx, [esi + eax + TYPE characterArray]
+		mov [edi + edx], ebx
+		pop esi
+		dec characterCount
+		inc huffmanTreeHead
+
+		makeCurNumberZero:
 		mov ebx, 0
 
 		skipInsertNode:
-		inc edx
-	loop getTreeNodes
+		inc esi
+	loop getTreeNodesShortcut
+
+	mov ebx, huffmanTreeSize
+	imul ebx, TYPE huffmanTree * 3
+
+	mov eax, [edi]
+	mov [edi + ebx], eax
+	mov eax, [edi + TYPE huffmanTree]
+	mov [edi + ebx + TYPE huffmanTree], eax
+	mov eax, [edi + TYPE huffmanTree * 2]
+	mov [edi + ebx + TYPE huffmanTree * 2], eax
+	inc huffmanTreeSize
+
+	pop eax
+	pop eax
 
 	ret
 constuctTreeDecompression ENDP
 
 
 ;--------------------------------------------------------------------------
-; this function convert input string to compress huffman tree code
+; Converts input string to compressed huffman tree code
 ;--------------------------------------------------------------------------
 getCompressedOutputString proc
 
@@ -776,27 +866,25 @@ getCompressedOutputString endp
 
 
 ;--------------------------------------------------------------------------
-; this function take huffmanTree and input string and get value of decompressed 
+; Take huffmanTree and input compressed code and get value of decompressed 
 ;--------------------------------------------------------------------------
-
-
 getDecompressedOutputString Proc
-	
+
 	; declare values to work with it
 	mov edi, offset decompressedOutputString
-	mov esi, offset compressedOutputString
+	mov esi, offset inputString
 	mov eax, huffmanTreeSize
 	dec eax
 	imul eax, shiftOffset
 	add eax, offset huffmanTree
-	mov ecx, compressedOutputStringSize
+	mov ecx, inputStringSize
 	
 	loopInInputStringToGeCharater:
 		; left node 
 		mov ebx, [eax + type huffmanTree]
 		
 		; check if this node has value or not
-		cmp ebx,-1
+		cmp ebx, -1
 		jnz goAddNumberToDecompressedString
 			mov ebx,[eax]
 			mov [edi],bl
@@ -805,17 +893,17 @@ getDecompressedOutputString Proc
 			dec eax
 			imul eax, shiftOffset
 			add eax, offset huffmanTree
+			inc decompressedOutputStringSize
 			cmp ecx,0
 			jz endTheLoopInInputStringToGeCharater
 			jmp loopInInputStringToGeCharater
 			
-		cmp ecx,0
-		jz endTheLoopInInputStringToGeCharater
-			
 		goAddNumberToDecompressedString:
+			cmp ecx,0
+			jz endTheLoopInInputStringToGeCharater
 			dec ecx
 			; 48 here meanning char '0'
-			mov edx,48
+			mov edx, 48
 			cmp [esi],dl
 			jnz GoToOneOnDecompressedString
 			mov eax,ebx
@@ -834,9 +922,7 @@ getDecompressedOutputString Proc
 				jmp loopInInputStringToGeCharater
 	
 		endTheLoopInInputStringToGeCharater:
-		mov edi, offset decompressedOutputString
 	
-		
 	RET
 getDecompressedOutputString endp
 
