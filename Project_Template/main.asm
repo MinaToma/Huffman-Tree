@@ -19,7 +19,9 @@ shiftOffset dword 12					  			  	;shift to get next Node
 nextValHuffmanTreeCode dword 8							;Go to next code at huffmanTreeCode
 maxValue dword 1000000000							  	;Max Value
 compressedOutputString byte 10000 dup(0)				;the result of huffmanTree code
-compressedOutputStringSize dword 0						; size of result of huffmanTree code
+compressedOutputStringSize dword 0						;size of result of huffmanTree code
+decompressedOutputString byte 10000 dup(0)				;the result of decompressed huffman tree
+decompressedOutputStringSize dword 0					; size of result of decompressed huffman tree
 
 
 ;--------------------------------------------------------------------------
@@ -95,7 +97,8 @@ main PROC
 	CALL Write_File
 	CALL getAllHuffmanTreeCode
 	CALL getCompressedOutputString
-
+	CALL getDecompressedOutputString
+	
 	exit
 main ENDP
 
@@ -621,7 +624,12 @@ getAllHuffmanTreeCode PROC
 	RET
 getAllHuffmanTreeCode ENDP
 
+
+;--------------------------------------------------------------------------
 ; this function convert input string to compress huffman tree code
+;--------------------------------------------------------------------------
+
+
 getCompressedOutputString proc
 
 	mov esi, offset inputString
@@ -674,5 +682,71 @@ getCompressedOutputString proc
 
 	RET
 getCompressedOutputString endp
+
+
+;--------------------------------------------------------------------------
+; this function take huffmanTree and input string and get value of decompressed 
+;--------------------------------------------------------------------------
+
+
+getDecompressedOutputString Proc
+	
+	; declare values to work with it
+	mov edi, offset decompressedOutputString
+	mov esi, offset compressedOutputString
+	mov eax, huffmanTreeSize
+	dec eax
+	imul eax, shiftOffset
+	add eax, offset huffmanTree
+	mov ecx, compressedOutputStringSize
+	
+	loopInInputStringToGeCharater:
+		; left node 
+		mov ebx, [eax + type huffmanTree]
+		
+		; check if this node has value or not
+		cmp ebx,-1
+		jnz goAddNumberToDecompressedString
+			mov ebx,[eax]
+			mov [edi],bl
+			inc edi
+			mov eax, huffmanTreeSize
+			dec eax
+			imul eax, shiftOffset
+			add eax, offset huffmanTree
+			cmp ecx,0
+			jz endTheLoopInInputStringToGeCharater
+			jmp loopInInputStringToGeCharater
+			
+		cmp ecx,0
+		jz endTheLoopInInputStringToGeCharater
+			
+		goAddNumberToDecompressedString:
+			dec ecx
+			; 48 here meanning char '0'
+			mov edx,48
+			cmp [esi],dl
+			jnz GoToOneOnDecompressedString
+			mov eax,ebx
+			imul eax, shiftOffset
+			add eax, offset huffmanTree
+			inc esi
+			jmp loopInInputStringToGeCharater
+			
+			GoToOneOnDecompressedString:
+				; right node
+				mov edx, [eax + type huffmanTree * 2]
+				mov eax,edx
+				imul eax, shiftOffset
+				add eax, offset huffmanTree
+				inc esi
+				jmp loopInInputStringToGeCharater
+	
+		endTheLoopInInputStringToGeCharater:
+		mov edi, offset decompressedOutputString
+	
+		
+	RET
+getDecompressedOutputString endp
 
 END main
