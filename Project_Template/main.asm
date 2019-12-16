@@ -7,17 +7,17 @@ INCLUDE macros.inc
 ;--------------------------------------------------------------------------
 ; Random purpose variables
 ;--------------------------------------------------------------------------
-inputString byte 1000 dup(0)							;input string
-inputStringSize dword 0									  ;ipnut string size
-outputString byte 1000 dup(0)							;output string
-outputStringSize dword 0							    ;output string size
-outputStringCharacter byte 1000 dup(0)		;output string for characters
+inputString byte 1000 dup(0)						;input string
+inputStringSize dword 0				    		    ;ipnut string size
+outputString byte 1000 dup(0)						;output string
+outputStringSize dword 0						    ;output string size
+outputStringCharacter byte 1000 dup(0)				;output string for characters
 outputStringCharacterSize dword 0					;output string for characters size
-newLineChar db 0Dh, 0Ah								  	;Variable for newLineChar
-newLineCharLength dword 2							  	;Length of newLineChar
-shiftOffset dword 12					  			  	;shift to get next Node
-nextValHuffmanTreeCode dword 8            ;Go to next code at huffmanTreeCode
-maxValue dword 1000000000							  	;Max Value
+newLineChar db 0Dh, 0Ah							  	;Variable for newLineChar
+newLineCharLength dword 2						  	;Length of newLineChar
+shiftOffset dword 12					  		  	;shift to get next Node
+nextValHuffmanTreeCode dword 8						;Go to next code at huffmanTreeCode
+maxValue dword 1000000000						  	;Max Value
 
 
 ;--------------------------------------------------------------------------
@@ -86,6 +86,36 @@ huffmanTreeCode dword 2048 dup(-1)
 .code
 main PROC
 	
+	;CALL compress
+	CALL decompress
+	
+	exit
+main ENDP
+
+; ------------------------------------------------------------------------------------------------------------
+; Reset All variables
+; ------------------------------------------------------------------------------------------------------------
+init PROC
+	
+	mov inputStringSize, 0
+	mov outputStringSize, 0
+	mov outputStringCharacterSize, 0
+	mov priorityQueueSize, 0
+	mov characterCount, 0
+	mov huffmanTreeSize, 0
+	mov bfsArrayHead, 0
+	mov bfsArrayTail, 0
+
+	ret
+init ENDP
+
+
+; ------------------------------------------------------------------------------------------------------------
+; Compression Function
+; ------------------------------------------------------------------------------------------------------------
+compress PROC
+		
+	CALL init
 	CALL Read_File
 	CALL constructOccurPQ
 	CALL constructTree
@@ -93,9 +123,21 @@ main PROC
 	CALL Write_File
 	CALL getAllHuffmanTreeCode
 
+	ret
+compress ENDP
 
-	exit
-main ENDP
+
+; ------------------------------------------------------------------------------------------------------------
+; Decompression
+; ------------------------------------------------------------------------------------------------------------
+decompress PROC
+
+	CALL init	
+	CALL Read_File
+	CALL constuctTreeDecompression
+
+	ret
+decompress ENDP
 
 
 ; ------------------------------------------------------------------------------------------------------------
@@ -144,7 +186,7 @@ Read_File proc
 	close_file:
 	mov eax, inputFileHandle
 	call CloseFile
- 
+
 	quit:
   ret
 Read_File Endp
@@ -562,18 +604,15 @@ getAllHuffmanTreeCode PROC
 		; get right node
 		mov ebx, [esi + type huffmanTree * 2]
 
-
 		cmp eax,-1
 		jnz getLeftAndRightNode
 
-			; now add code value to our ds
-			mov edx, [esi]
-			mov [edi], edx
-			mov [edi + type huffmanTreeCode], ecx
-			add edi, nextValHuffmanTreeCode
-			jmp endThisNode
-
-
+		; now add code value to our ds
+		mov edx, [esi]
+		mov [edi], edx
+		mov [edi + type huffmanTreeCode], ecx
+		add edi, nextValHuffmanTreeCode
+		jmp endThisNode
 
 		; if node is not null push the currnet code in stack and address 
 		getLeftAndRightNode:
@@ -588,8 +627,7 @@ getAllHuffmanTreeCode PROC
 			push edx
 		leftNodeIsNull:
 
-
-			cmp ebx,-1
+		cmp ebx,-1
 		jz rightNodeIsNull
 			imul ebx, TYPE huffmanTree * 3
 			shl ecx,1
@@ -600,7 +638,6 @@ getAllHuffmanTreeCode PROC
 			add edx, ebx
 			push edx
 		rightNodeIsNull:
-
 
 		endThisNode:
 			pop eax
@@ -616,5 +653,64 @@ getAllHuffmanTreeCode PROC
 	RET
 getAllHuffmanTreeCode ENDP
 
+
+constuctTreeDecompression PROC
+	
+	mov edx, offset inputString
+	call writestring
+	call crlf
+
+	mov esi, offset inputString
+	mov ecx, inputStringSize
+	mov edi, offset characterArray
+	getCharacters:
+		mov eax, 0
+		mov eax, [esi + ecx - 1]
+		call writechar
+		call crlf
+		cmp al, ' '
+		
+		jz skipChar
+		cmp al, 0Ah
+		jz endOfLine
+
+		mov ebx, characterCount
+		imul ebx, TYPE characterArray
+		mov [edi + ebx + TYPE characterArray], eax
+		inc characterCount
+
+		skipChar:
+	loop getCharacters
+
+	endOfLine:
+	sub ecx, 2
+
+	mov ebx, 0
+	mov edx, 0
+	getTreeNodes:
+		mov eax, [esi + edx]
+		cmp al, ' '
+		jz insertNodeValue
+		imul ebx, 10
+		and al, 11001111b
+		push edx
+		movzx edx, al
+		mov eax, edx
+		pop edx
+		add ebx, eax
+		jmp skipInsertNode
+
+		insertNodeValue:
+		mov eax, ebx
+		call writedec
+		call crlf
+		mov ebx, 0
+
+		skipInsertNode:
+		inc edx
+	loop getTreeNodes
+
+	ret
+constuctTreeDecompression ENDP
 
 END main
