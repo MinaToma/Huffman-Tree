@@ -8,16 +8,18 @@ INCLUDE macros.inc
 ; Random purpose variables
 ;--------------------------------------------------------------------------
 inputString byte 1000 dup(0)							;input string
-inputStringSize dword 0									  ;ipnut string size
+inputStringSize dword 0									;ipnut string size
 outputString byte 1000 dup(0)							;output string
 outputStringSize dword 0							    ;output string size
-outputStringCharacter byte 1000 dup(0)		;output string for characters
-outputStringCharacterSize dword 0					;output string for characters size
+outputStringCharacter byte 1000 dup(0)					;output string for characters
+outputStringCharacterSize dword 0						;output string for characters size
 newLineChar db 0Dh, 0Ah								  	;Variable for newLineChar
 newLineCharLength dword 2							  	;Length of newLineChar
 shiftOffset dword 12					  			  	;shift to get next Node
-nextValHuffmanTreeCode dword 8            ;Go to next code at huffmanTreeCode
+nextValHuffmanTreeCode dword 8							;Go to next code at huffmanTreeCode
 maxValue dword 1000000000							  	;Max Value
+compressedOutputString byte 10000 dup(0)				;the result of huffmanTree code
+compressedOutputStringSize dword 0						; size of result of huffmanTree code
 
 
 ;--------------------------------------------------------------------------
@@ -92,7 +94,7 @@ main PROC
 	CALL bfsTraversal
 	CALL Write_File
 	CALL getAllHuffmanTreeCode
-
+	CALL getCompressedOutputString
 
 	exit
 main ENDP
@@ -571,6 +573,9 @@ getAllHuffmanTreeCode PROC
 			mov [edi], edx
 			mov [edi + type huffmanTreeCode], ecx
 			add edi, nextValHuffmanTreeCode
+			mov eax,edx
+			call writeChar
+			call crlf
 			jmp endThisNode
 
 
@@ -616,5 +621,58 @@ getAllHuffmanTreeCode PROC
 	RET
 getAllHuffmanTreeCode ENDP
 
+; this function convert input string to compress huffman tree code
+getCompressedOutputString proc
+
+	mov esi, offset inputString
+	mov ecx, inputStringSize
+	mov edx, offset compressedOutputString
+	loopInInputStringToGetCode:
+		; loop in huffman tree code to get code for each character
+		mov edi, offset huffmanTreeCode
+		sub edi, nextValHuffmanTreeCode
+		loopToGetKayOfTreeCode:
+			add edi,nextValHuffmanTreeCode
+			movzx eax, byte ptr [edi]
+			cmp al,[esi]
+			jnz loopToGetKayOfTreeCode
+		
+		; push value in stack to store it in string and remove last one 
+		mov eax,[edi + type huffmanTreeCode]
+		mov ebx, 3
+		push ebx
+		getNumberValueFromTreeCode:
+			test eax,1
+			jnz addOneToStack
+			mov ebx,0
+			push ebx
+			jmp donotAddOneToStack
+			addOneToStack:
+			mov ebx,1
+			push ebx
+			donotAddOneToStack:
+			shr eax,1
+			; remove last one
+			cmp eax,1
+			jnz getNumberValueFromTreeCode
+		
+		; get number from stack and add it into string 
+		addNumberToOutputString:
+			pop eax
+			cmp eax, 3
+		 	jz endAddNumberToOutputString
+			add eax,48
+			mov [edx], al
+			inc edx
+			inc compressedOutputStringSize
+			jmp addNumberToOutputString
+		
+		endAddNumberToOutputString:
+			inc esi
+			
+	loop loopInInputStringToGetCode	
+
+	RET
+getCompressedOutputString endp
 
 END main
