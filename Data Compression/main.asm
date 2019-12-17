@@ -92,12 +92,9 @@ huffmanTreeCode dword 2048 dup(-1)
 
 
 .code
-main PROC
-	
-	CALL compress
-	;CALL decompress
-	
-	exit
+main PROC hInstance: DWORD,  fdwReason: DWORD, lpReserved: DWORD
+	mov eax, 1
+	ret
 main ENDP
 
 
