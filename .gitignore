@@ -138,3 +138,7 @@ _NCrunch*
 *.vcxproj
 *.db
 *.opendb
+*.lock
+*.ide
+*.ide-shm
+*.ide-wal

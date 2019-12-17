@@ -29,17 +29,18 @@ decompressedOutputStringSize dword 0					; size of result of decompressed huffma
 ;--------------------------------------------------------------------------
 bufferSize DWORD  1000d 
 buffer BYTE 1000 DUP(?)
-inputFileNameStringInput BYTE "C:\Huffman-Tree\Data Compression\stringInput.txt", 0
-inputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\huffmanTree.txt", 0
-inputFileNameCompressedString BYTE "C:\Huffman-Tree\Data Compression\compressedCode.txt", 0
+inputFileNameStringInput BYTE "C:\Huffman-Tree\Data Compression\Text Files\String Input.txt", 0
+inputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\Text Files\Huffman Tree.txt", 0
+inputFileNameCompressedString BYTE "C:\Huffman-Tree\Data Compression\Text Files\Compressed Code.txt", 0
 inputFileHandle HANDLE ?
 
 
 ;--------------------------------------------------------------------------
 ; Variables for wrting to file
 ;--------------------------------------------------------------------------
-outputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\huffmanTree.txt", 0
-outputFileNameCompressedCode BYTE "C:\Huffman-Tree\Data Compression\compressedCode.txt", 0
+outputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\Text Files\Huffman Tree.txt", 0
+outputFileNameCompressedCode BYTE "C:\Huffman-Tree\Data Compression\Text Files\Compressed Code.txt", 0
+outputFileNameDecompressedFile BYTE "C:\Huffman-Tree\Data Compression\Text Files\Decompressed File.txt", 0
 outputFileHandle HANDLE ?
 stringLength DWORD ?
 cannotCreateFileError BYTE "Cannot create file", 0dh, 0ah, 0
@@ -242,7 +243,7 @@ decompress PROC
 	CALL getAllHuffmanTreeCode
 	CALL getDecompressedOutputString
 	mov edx, offset decompressedOutputString
-	INVOKE Write_File, offset decompressedOutputString, decompressedOutputStringSize, offset outputFileNameCompressedCode
+	INVOKE Write_File, offset decompressedOutputString, decompressedOutputStringSize, offset outputFileNameDecompressedFile
 
 	ret
 decompress ENDP
