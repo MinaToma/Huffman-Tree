@@ -38,7 +38,7 @@
             this.VisualiserPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.VisualiserPanel.Location = new System.Drawing.Point(0, 0);
             this.VisualiserPanel.Name = "VisualiserPanel";
-            this.VisualiserPanel.Size = new System.Drawing.Size(1503, 673);
+            this.VisualiserPanel.Size = new System.Drawing.Size(1507, 673);
             this.VisualiserPanel.TabIndex = 1;
             this.VisualiserPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.VisualiserPanel_Paint);
             // 
@@ -47,7 +47,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
-            this.ClientSize = new System.Drawing.Size(1503, 673);
+            this.ClientSize = new System.Drawing.Size(1507, 673);
             this.Controls.Add(this.VisualiserPanel);
             this.DoubleBuffered = true;
             this.Name = "HuffmanVisualiser";

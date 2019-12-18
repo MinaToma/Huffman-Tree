@@ -20,11 +20,13 @@ namespace HuffmanVisualiser
         private void compressButton_Click(object sender, EventArgs e)
         {
             DLLManager.compress();
+            MessageBox.Show("Compressed file successfully!");
         }
 
         private void decompressButton_Click(object sender, EventArgs e)
         {
             DLLManager.decompress();
+            MessageBox.Show("Decompressed file successfully!");
         }
 
         private void visualiseButton_Click(object sender, EventArgs e)

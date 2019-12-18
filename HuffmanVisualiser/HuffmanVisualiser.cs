@@ -78,7 +78,7 @@ namespace HuffmanVisualiser
             float xShift = r * 2 + Width * 0.00001f;
             float yShift = r * 2 + Width * 0.00001f;
             float yStart = d * 2;
-            float xStart = Width / 2 + r;
+            float xStart = Width / 2;
 
             for (int i = 0; i < huffmanTree.Count; i++)
             {

@@ -184,6 +184,7 @@ Write_File proc, stringToOutputOffset:ptr dword, stringToOutputSize:dword, outpu
 	mov ecx, stringLength
 	call WriteToFile
 
+	mov eax, outputFileHandle
 	call CloseFile
 	quit:
 
