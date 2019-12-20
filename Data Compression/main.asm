@@ -7,39 +7,41 @@ INCLUDE macros.inc
 ;--------------------------------------------------------------------------
 ; Random purpose variables
 ;--------------------------------------------------------------------------
-inputString byte 1000 dup(0)							;input string
+CONSTSIZE EQU <1024>
+inputString byte CONSTSIZE dup(0)							;input string
 inputStringSize dword 0									;ipnut string size
-outputString byte 1000 dup(0)							;output string
+outputString byte CONSTSIZE dup(0)							;output string
 outputStringSize dword 0							    ;output string size
-outputStringCharacter byte 1000 dup(0)					;output string for characters
+outputStringCharacter byte CONSTSIZE dup(0)					;output string for characters
 outputStringCharacterSize dword 0						;output string for characters size
 newLineChar db 0Dh, 0Ah								  	;Variable for newLineChar
 newLineCharLength dword 2							  	;Length of newLineChar
 shiftOffset dword 12					  			  	;shift to get next Node
 nextValHuffmanTreeCode dword 8							;Go to next code at huffmanTreeCode
 maxValue dword 1000000000							  	;Max Value
-compressedOutputString byte 1000 dup(0)					;the result of huffmanTree code
+compressedOutputString byte CONSTSIZE dup(0)					;the result of huffmanTree code
 compressedOutputStringSize dword 0						;size of result of huffmanTree code
-decompressedOutputString byte 1000 dup(0)				;the result of decompressed huffman tree
+decompressedOutputString byte CONSTSIZE dup(0)				;the result of decompressed huffman tree
 decompressedOutputStringSize dword 0					; size of result of decompressed huffman tree
 
 
 ;--------------------------------------------------------------------------
 ; Variables for reading form file
 ;--------------------------------------------------------------------------
-bufferSize DWORD  1000d 
-buffer BYTE 1000 DUP(?)
-inputFileNameStringInput BYTE "C:\Huffman-Tree\Project_Template\Debug\stringInput.txt",0
-inputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Project_Template\Debug\huffmanTree.txt",0
-inputFileNameCompressedString BYTE "C:\Huffman-Tree\Project_Template\Debug\compressedCode.txt",0
+bufferSize DWORD  CONSTSIZE 
+buffer BYTE CONSTSIZE DUP(?)
+inputFileNameStringInput BYTE "C:\Huffman-Tree\Data Compression\Text Files\String Input.txt", 0
+inputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\Text Files\Huffman Tree.txt", 0
+inputFileNameCompressedString BYTE "C:\Huffman-Tree\Data Compression\Text Files\Compressed Code.txt", 0
 inputFileHandle HANDLE ?
 
 
 ;--------------------------------------------------------------------------
 ; Variables for wrting to file
 ;--------------------------------------------------------------------------
-outputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Project_Template\Debug\huffmanTree.txt", 0
-outputFileNameCompressedCode BYTE "C:\Huffman-Tree\Project_Template\Debug\compressedCode.txt", 0
+outputFileNameHuffmanTree BYTE "C:\Huffman-Tree\Data Compression\Text Files\Huffman Tree.txt", 0
+outputFileNameCompressedCode BYTE "C:\Huffman-Tree\Data Compression\Text Files\Compressed Code.txt", 0
+outputFileNameDecompressedFile BYTE "C:\Huffman-Tree\Data Compression\Text Files\Decompressed File.txt", 0
 outputFileHandle HANDLE ?
 stringLength DWORD ?
 cannotCreateFileError BYTE "Cannot create file", 0dh, 0ah, 0
@@ -51,8 +53,8 @@ cannotCreateFileError BYTE "Cannot create file", 0dh, 0ah, 0
 ;	FirstDword			SecondDword			ThirdDword
 ;	Occurrences			Value				Index in huffmanTree
 ;--------------------------------------------------------------------------
-priorityQueue dword 1024 dup(-1)
-characterArray dword 1024 dup(-1)
+priorityQueue dword CONSTSIZE dup(-1)
+characterArray dword CONSTSIZE dup(-1)
 priorityQueueSize dword 0								;The size of priorityQueue
 characterCount dword 0									;Number of Characters
 
@@ -63,15 +65,15 @@ characterCount dword 0									;Number of Characters
 ;	FirstDword			SecondDword			ThirdDword
 ;	Value				LeftChild			RightChild
 ;--------------------------------------------------------------------------
-huffmanTree dword 2048 dup(-1)
+huffmanTree dword CONSTSIZE * 2 dup(-1)
 huffmanTreeHead dword 0									;Pointer to head of huffman tree
-huffmanTreeSize dword 0									;The size of huffmanTree
+huffmanTreeSize dword 0									;The size of 
 
 
 ;--------------------------------------------------------------------------
 ;	Main array to perform BFS on the tree	
 ;--------------------------------------------------------------------------
-bfsArray dword 1024 dup(0)
+bfsArray dword CONSTSIZE dup(0)
 bfsArrayHead dword 0									;Pointer of bfsArray head
 bfsArrayTail dword 0									;Pointer of bfsArray tail
 
@@ -82,7 +84,7 @@ bfsArrayTail dword 0									;Pointer of bfsArray tail
 ;	FirstDword			SecondDword
 ;	Key					binaryCode
 ;--------------------------------------------------------------------------
-huffmanTreeCode dword 2048 dup(-1)
+huffmanTreeCode dword CONSTSIZE * 2 dup(-1)
 
 
 ;==========================================================================
@@ -91,12 +93,19 @@ huffmanTreeCode dword 2048 dup(-1)
 
 
 .code
-main PROC
-	
-	CALL compress
-	;CALL decompress
-	
-	exit
+main PROC hInstance: DWORD,  fdwReason: DWORD, lpReserved: DWORD
+	mov eax, 1
+	ret
+	;call compress
+	;call decompress
+	;call compress
+	;call decompress
+	;call compress
+	;call decompress
+	;call compress
+	;call decompress
+
+;	exit
 main ENDP
 
 
@@ -106,7 +115,7 @@ main ENDP
 ; Reutrns buff => data of file 
 ; ------------------------------------------------------------------------------------------------------------
 Read_File proc, stringToInputOffset:ptr dword, stringToInputSizeOffset:ptr dword, inputFileOffset:ptr dword
-
+	;pushad
 	mov edx, inputFileOffset
 
 	call OpenInputFile
@@ -149,6 +158,7 @@ Read_File proc, stringToInputOffset:ptr dword, stringToInputSizeOffset:ptr dword
 	call CloseFile
 
 	quit:
+	;popad
   ret
 Read_File Endp
 
@@ -159,7 +169,7 @@ Read_File Endp
 ; Reutrns new updated file after writing
 ; ------------------------------------------------------------------------------------------------------------
 Write_File proc, stringToOutputOffset:ptr dword, stringToOutputSize:dword, outputFileNameHuffmanTreeOffset:ptr dword
-
+	;pushad
 	mov edx, outputFileNameHuffmanTreeOffset ; Create a new text file.
 	call CreateOutputFile
 	mov outputFileHandle, eax
@@ -168,7 +178,7 @@ Write_File proc, stringToOutputOffset:ptr dword, stringToOutputSize:dword, outpu
 	cmp eax, INVALID_HANDLE_VALUE ; error found ?
 	jne file_ok ; no: skip
 	mov edx, OFFSET cannotCreateFileError; display error
-	call WriteString
+	;call WriteString
 	jmp quit
 
 	file_ok:
@@ -186,9 +196,10 @@ Write_File proc, stringToOutputOffset:ptr dword, stringToOutputSize:dword, outpu
 	mov ecx, stringLength
 	call WriteToFile
 
+	mov eax, outputFileHandle
 	call CloseFile
 	quit:
-
+	;popad
     ret
 Write_File ENDP
 
@@ -197,6 +208,27 @@ Write_File ENDP
 ; Reset All variables
 ; ------------------------------------------------------------------------------------------------------------
 init PROC
+	mov eax, -1
+	mov edi, offset huffmanTree
+	mov ecx, CONSTSIZE * 2
+	rep stosd 
+	
+	mov edi, offset huffmanTreeCode
+	mov ecx, CONSTSIZE * 2
+	rep stosd 
+	
+	mov edi, offset priorityQueue
+	mov ecx, CONSTSIZE
+	rep stosd 
+	
+	mov edi, offset characterArray
+	mov ecx, CONSTSIZE
+	rep stosd 
+	
+	mov eax, 0
+	mov edi, offset bfsArray
+	mov ecx, CONSTSIZE
+	rep stosd
 	
 	mov inputStringSize, 0
 	mov outputStringSize, 0
@@ -204,8 +236,11 @@ init PROC
 	mov priorityQueueSize, 0
 	mov characterCount, 0
 	mov huffmanTreeSize, 0
+	mov huffmanTreeHead, 0
 	mov bfsArrayHead, 0
 	mov bfsArrayTail, 0
+	mov compressedOutputStringSize, 0
+	mov decompressedOutputStringSize, 0
 
 	ret
 init ENDP
@@ -215,7 +250,7 @@ init ENDP
 ; Compression Function
 ; ------------------------------------------------------------------------------------------------------------
 compress PROC
-		
+	pushad
 	CALL init
 	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameStringInput
 	CALL constructOccurPQ
@@ -225,7 +260,7 @@ compress PROC
 	CALL getAllHuffmanTreeCode
 	CALL getCompressedOutputString
 	INVOKE Write_File, offset compressedOutputString, compressedOutputStringSize, offset outputFileNameCompressedCode
-
+	popad
 	ret
 compress ENDP
 
@@ -234,16 +269,19 @@ compress ENDP
 ; Decompression
 ; ------------------------------------------------------------------------------------------------------------
 decompress PROC
-
+	pushad
 	CALL init	
+	mov eax, huffmanTreeSize
 	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameHuffmanTree
+	
+	mov eax, huffmanTreeSize
 	CALL constuctTreeDecompression
 	INVOKE Read_File, offset inputString, offset inputStringSize, offset inputFileNameCompressedString
 	CALL getAllHuffmanTreeCode
 	CALL getDecompressedOutputString
 	mov edx, offset decompressedOutputString
-	INVOKE Write_File, offset decompressedOutputString, decompressedOutputStringSize, offset outputFileNameCompressedCode
-
+	INVOKE Write_File, offset decompressedOutputString, decompressedOutputStringSize, offset outputFileNameDecompressedFile
+	popad
 	ret
 decompress ENDP
 
